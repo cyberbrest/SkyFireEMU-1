@@ -8990,3 +8990,38 @@ VehicleAccessoryList const* ObjectMgr::GetVehicleAccessoryList(Vehicle* veh) con
         return &itr->second;
     return NULL;
 }
+
+void ObjectMgr::LoadHotfixData()
+{
+    uint32 oldMSTime = getMSTime();
+
+    QueryResult result = WorldDatabase.Query("SELECT entry, type, UNIX_TIMESTAMP(hotixDate) FROM hotfix_data");
+
+    if (!result)
+    {
+        sLog->outString(">> Loaded 0 hotfix info entries. DB table `hotfix_data` is empty.");
+        sLog->outString();
+        return;
+    }
+
+    uint32 count = 0;
+
+    _hotfixData.reserve(result->GetRowCount());
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        HotfixInfo info;
+        info.Entry = fields[0].GetUInt32();
+        info.Type = fields[1].GetUInt32();
+        info.Timestamp = fields[2].GetUInt32();
+
+        _hotfixData.push_back(info);
+        ++count;
+    }
+    while (result->NextRow());
+
+    sLog->outString(">> Loaded %u hotfix info entries in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+    sLog->outString();
+}

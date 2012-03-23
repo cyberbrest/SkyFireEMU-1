@@ -87,7 +87,7 @@ void InitOpcodeTable()
     OPCODE( CMSG_COMMENTATOR_START_WARGAME,               STATUS_NEVER,    PROCESS_INPLACE,       &WorldSession::Handle_NULL                     );
     OPCODE( SMSG_DB_REPLY,                                STATUS_NEVER,    PROCESS_INPLACE,       &WorldSession::Handle_ServerSide               );
     OPCODE( CMSG_PAGE_TEXT_QUERY,                         STATUS_LOGGEDIN, PROCESS_THREADUNSAFE,  &WorldSession::HandlePageTextQueryOpcode       );
-    OPCODE( CMSG_REQUEST_HOTFIX,                          STATUS_AUTHED,   PROCESS_INPLACE,       &WorldSession::HandleRequestHotFix             );
+    OPCODE( CMSG_REQUEST_HOTFIX,                          STATUS_AUTHED,   PROCESS_INPLACE,       &WorldSession::HandleRequestHotfix             );
     OPCODE( SMSG_PAGE_TEXT_QUERY_RESPONSE,                STATUS_NEVER,    PROCESS_INPLACE,       &WorldSession::Handle_ServerSide               );
     OPCODE( CMSG_QUEST_QUERY,                             STATUS_LOGGEDIN_OR_RECENTLY_LOGGOUT, PROCESS_INPLACE,        &WorldSession::HandleQuestQueryOpcode );
     OPCODE( SMSG_QUEST_QUERY_RESPONSE,                    STATUS_NEVER,    PROCESS_INPLACE,       &WorldSession::Handle_ServerSide               );
