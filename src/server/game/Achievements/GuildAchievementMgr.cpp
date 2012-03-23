@@ -200,7 +200,7 @@ void GuildAchievementMgr::LoadFromDB()
             if (!achievement)
                 continue;
 
-            if(!(achievement->flags & ACHIEVEMENT_FLAG_GUILD_ACHIEVEMENT))
+            if(!(achievement->flags & ACHIEVEMENT_FLAG_GUILD))
                 continue;
 
             CompletedAchievementData& ca = m_completedAchievements[achievementid];
@@ -243,7 +243,7 @@ void GuildAchievementMgr::SendAchievementEarned(AchievementEntry const* achievem
     if (achievement->flags & ACHIEVEMENT_FLAG_HIDDEN)
         return;
 
-    if (!(achievement->flags & ACHIEVEMENT_FLAG_GUILD_ACHIEVEMENT))
+    if (!(achievement->flags & ACHIEVEMENT_FLAG_GUILD))
         return;
 
     sLog->outString("Guild %u earned achievement %u", _guild->GetId(), achievement->ID);
@@ -264,7 +264,7 @@ void GuildAchievementMgr::CheckAllAchievementCriteria()
 
 void GuildAchievementMgr::CompletedAchievement(AchievementEntry const* achievement, Player* player)
 {
-    if (!(achievement->flags & ACHIEVEMENT_FLAG_GUILD_ACHIEVEMENT))
+    if (!(achievement->flags & ACHIEVEMENT_FLAG_GUILD))
         return;
 
     if (achievement->flags & ACHIEVEMENT_FLAG_COUNTER || HasAchieved(achievement->ID))

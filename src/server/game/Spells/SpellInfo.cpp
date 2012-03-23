@@ -329,7 +329,7 @@ SpellEffectInfo::SpellEffectInfo()
     ApplyAuraName = 0;
     Amplitude = 0;
     BasePoints = 0;
-    BonusCoefficient = 0.0f;
+    BonusMultiplier = 0.0f;
     DamageMultiplier = 0.0f;
     ChainTarget = 0;
     DieSides = 0;
@@ -355,7 +355,7 @@ SpellEffectInfo::SpellEffectInfo(SpellEffectEntry const *spellEffect, SpellInfo 
     ApplyAuraName = spellEffect->EffectApplyAuraName;
     Amplitude = spellEffect->EffectAmplitude;
     BasePoints = spellEffect->EffectBasePoints;
-    BonusCoefficient = spellEffect->EffectBonusCoefficient;
+    BonusMultiplier = spellEffect->EffectBonusMultiplier;
     DamageMultiplier = spellEffect->EffectDamageMultiplier;
     ChainTarget = spellEffect->EffectChainTarget;
     DieSides = spellEffect->EffectDieSides;
@@ -557,7 +557,7 @@ float SpellEffectInfo::CalcRadius(Unit* caster, Spell* spell) const
     if (!HasRadius())
         return 0.0f;
 
-    float radius = RadiusEntry->radiusMax;
+    float radius = RadiusEntry->radiusHostile;
     if (Player* modOwner = (caster ? caster->GetSpellModOwner() : NULL))
         modOwner->ApplySpellMod(_spellInfo->Id, SPELLMOD_RADIUS, radius, spell);
 

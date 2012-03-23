@@ -4507,10 +4507,10 @@ bool Player::resetTalents(bool no_cost)
     {
         TalentTreePrimarySpellsEntry const *talentInfo = sTalentTreePrimarySpellsStore.LookupEntry(i);
 
-        if (!talentInfo || talentInfo->TalentTabID != GetTalentBranchSpec(_activeSpec))
+        if (!talentInfo || talentInfo->TalentTree != GetTalentBranchSpec(_activeSpec))
             continue;
 
-        removeSpell(talentInfo->SpellID, true);
+        removeSpell(talentInfo->SpellId, true);
     }
 
     _branchSpec[_activeSpec] = 0;
@@ -21197,7 +21197,7 @@ inline bool Player::_StoreOrEquipNewItem(uint32 vendorslot, uint32 item, uint8 c
 
         //TODO: ModifyCurrency
 
-        for (uint8 i = 0; i < MAX_ITEM_EXTENDED_COST_REQUIREMENTS; ++i)
+        for (uint8 i = 0; i < MAX_ITEM_EXT_COST_CURRENCIES; ++i)
         {
             if (iece->RequiredItem[i])
                 DestroyItemCount(iece->RequiredItem[i], (iece->RequiredItemCount[i] * count), true);
@@ -24814,7 +24814,7 @@ void Player::BuildPlayerTalentsInfoData(WorldPacket *data)
 
             for (uint8 i = 0; i < MAX_TALENT_TABS; ++i)
             {
-                uint32 talentTabId = talentTabIds[i];
+                uint32 TalentTree = talentTabIds[i];
 
                 for (uint32 talentId = 0; talentId < sTalentStore.GetNumRows(); ++talentId)
                 {
@@ -24823,7 +24823,7 @@ void Player::BuildPlayerTalentsInfoData(WorldPacket *data)
                         continue;
 
                     // skip another tab talents
-                    if (talentInfo->TalentTab != talentTabId)
+                    if (talentInfo->TalentTab != TalentTree)
                         continue;
 
                     // find max talent rank (0~4)
@@ -24884,9 +24884,9 @@ void Player::BuildPetTalentsInfoData(WorldPacket *data)
     if (!pet_family || pet_family->petTalentType < 0)
         return;
 
-    for (uint32 talentTabId = 1; talentTabId < sTalentTabStore.GetNumRows(); ++talentTabId)
+    for (uint32 TalentTree = 1; TalentTree < sTalentTabStore.GetNumRows(); ++TalentTree)
     {
-        TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentTabId);
+        TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(TalentTree);
         if (!talentTabInfo)
             continue;
 
@@ -24900,7 +24900,7 @@ void Player::BuildPetTalentsInfoData(WorldPacket *data)
                 continue;
 
             // skip another tab talents
-            if (talentInfo->TalentTab != talentTabId)
+            if (talentInfo->TalentTab != TalentTree)
                 continue;
 
             // find max talent rank (0~4)
@@ -25411,10 +25411,10 @@ void Player::ActivateSpec(uint8 spec)
     {
         TalentTreePrimarySpellsEntry const* talentInfo = sTalentTreePrimarySpellsStore.LookupEntry(i);
 
-        if (!talentInfo || talentInfo->TalentTabID != GetTalentBranchSpec(_activeSpec))
+        if (!talentInfo || talentInfo->TalentTree != GetTalentBranchSpec(_activeSpec))
             continue;
 
-        removeSpell(talentInfo->SpellID, true);
+        removeSpell(talentInfo->SpellId, true);
     }
 
     // set glyphs
@@ -25465,10 +25465,10 @@ void Player::ActivateSpec(uint8 spec)
     {
         TalentTreePrimarySpellsEntry const *talentInfo = sTalentTreePrimarySpellsStore.LookupEntry(i);
 
-        if (!talentInfo || talentInfo->TalentTabID != GetTalentBranchSpec(spec))
+        if (!talentInfo || talentInfo->TalentTree != GetTalentBranchSpec(spec))
             continue;
 
-        learnSpell(talentInfo->SpellID, false);
+        learnSpell(talentInfo->SpellId, false);
     }
 
     // set glyphs
@@ -25938,10 +25938,10 @@ void Player::SetTalentBranchSpec(uint32 branchSpec, uint8 spec)
     {
         TalentTreePrimarySpellsEntry const *talentInfo = sTalentTreePrimarySpellsStore.LookupEntry(i);
 
-        if (!talentInfo || talentInfo->TalentTabID != branchSpec)
+        if (!talentInfo || talentInfo->TalentTree != branchSpec)
             continue;
 
-        learnSpell(talentInfo->SpellID, true);
+        learnSpell(talentInfo->SpellId, true);
     }
     sScriptMgr->OnTalentBranchSpecChanged(this, spec, branchSpec);
 }

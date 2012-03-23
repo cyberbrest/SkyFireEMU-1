@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 SingularityCore <http://www.singularitycore.org/>
+ * Copyright (C) 2011-2012 Project SkyFire <http://www.projectskyfire.org/>
  * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
@@ -27,6 +27,8 @@
 #include <list>
 
 extern DB2Storage <ItemEntry> sItemStore;
+extern DB2Storage <ItemCurrencyCostEntry> sItemCurrencyCostStore;
+extern DB2Storage <ItemExtendedCostEntry> sItemExtendedCostStore;
 extern DB2Storage <ItemSparseEntry> sItemSparseStore;
 
 void LoadDB2Stores(const std::string& dataPath);

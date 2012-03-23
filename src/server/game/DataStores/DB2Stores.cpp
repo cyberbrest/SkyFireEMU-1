@@ -18,9 +18,7 @@
  */
 
 #include "DB2Stores.h"
-
-#include "Entities/Item/ItemPrototype.h"
-#include "Logging/Log.h"
+#include "Log.h"
 #include "SharedDefines.h"
 #include "SpellMgr.h"
 #include "DB2fmt.h"
@@ -28,13 +26,15 @@
 #include <map>
 
 DB2Storage <ItemEntry> sItemStore(Itemfmt);
+DB2Storage <ItemCurrencyCostEntry> sItemCurrencyCostStore(ItemCurrencyCostfmt);
+DB2Storage <ItemExtendedCostEntry> sItemExtendedCostStore(ItemExtendedCostEntryfmt);
 DB2Storage <ItemSparseEntry> sItemSparseStore (ItemSparsefmt);
 
 typedef std::list<std::string> StoreProblemList1;
 
 uint32 DB2FilesCount = 0;
 
-static bool LoadDB2_assert_print(uint32 fsize, uint32 rsize, const std::string& filename)
+static bool LoadDB2_assert_print(uint32 fsize,uint32 rsize, const std::string& filename)
 {
     sLog->outError("Size of '%s' setted by format string (%u) not equal size of C++ structure (%u).", filename.c_str(), fsize, rsize);
 
@@ -59,6 +59,7 @@ inline void LoadDB2(StoreProblemList1& errlist, DB2Storage<T>& storage, const st
     ASSERT(DB2FileLoader::GetFormatRecordSize(storage.GetFormat()) == sizeof(T) || LoadDB2_assert_print(DB2FileLoader::GetFormatRecordSize(storage.GetFormat()), sizeof(T), filename));
 
     ++DB2FilesCount;
+
     std::string db2_filename = db2_path + filename;
     if (!storage.Load(db2_filename.c_str()))
     {
@@ -66,7 +67,7 @@ inline void LoadDB2(StoreProblemList1& errlist, DB2Storage<T>& storage, const st
         if (FILE * f = fopen(db2_filename.c_str(), "rb"))
         {
             char buf[100];
-            snprintf(buf, 100, "(exist, but have %d fields instead " SIZEFMTD ") Wrong client version DBC file?", storage.GetFieldCount(), strlen(storage.GetFormat()));
+            snprintf(buf, 100,"(exist, but have %d fields instead " SIZEFMTD ") Wrong client version DBC file?", storage.GetFieldCount(), strlen(storage.GetFormat()));
             errlist.push_back(db2_filename + buf);
             fclose(f);
         }
@@ -81,9 +82,10 @@ void LoadDB2Stores(const std::string& dataPath)
 
     StoreProblemList1 bad_db2_files;
 
-    LoadDB2(bad_db2_files, sItemStore,                   db2Path, "Item.db2");
-    LoadDB2(bad_db2_files, sItemSparseStore,             db2Path, "Item-sparse.db2");
-
+    LoadDB2(bad_db2_files, sItemStore, db2Path, "Item.db2");
+    LoadDB2(bad_db2_files, sItemCurrencyCostStore, db2Path, "ItemCurrencyCost.db2");
+    LoadDB2(bad_db2_files, sItemSparseStore, db2Path, "Item-sparse.db2");
+    LoadDB2(bad_db2_files, sItemExtendedCostStore, db2Path, "ItemExtendedCost.db2");
     // error checks
     if (bad_db2_files.size() >= DB2FilesCount)
     {
@@ -96,34 +98,16 @@ void LoadDB2Stores(const std::string& dataPath)
         for (std::list<std::string>::iterator i = bad_db2_files.begin(); i != bad_db2_files.end(); ++i)
             str += *i + "\n";
 
-        sLog->outError("\nSome required *.db2 files (%u from %d) not found or not compatible:\n%s", (uint32)bad_db2_files.size(), DB2FilesCount, str.c_str());
+        sLog->outError("\nSome required *.db2 files (%u from %d) not found or not compatible:\n%s", (uint32)bad_db2_files.size(), DB2FilesCount,str.c_str());
         exit(1);
     }
 
-    for (uint32 i = 0; i < sItemStore.GetNumRows(); ++i)
-    {
-        ItemEntry const* itemEntry = sItemStore.LookupEntry(i);
-        if (!itemEntry)
-            continue;
-
-        if (itemEntry->Class >= MAX_ITEM_CLASS)
-        {
-            sLog->outErrorDb("Item (Entry: %u) in Item.db2 has too high class value %u", itemEntry->ID, itemEntry->Class);
-            const_cast<ItemEntry*>(itemEntry)->Class = 0;
-        }
-        if (itemEntry->SubClass >= MaxItemSubclassValues[itemEntry->Class])
-        {
-            sLog->outErrorDb("Item (Entry: %u) in Item.db2 has too high subclass value %u for class %u", itemEntry->ID, itemEntry->SubClass, itemEntry->Class);
-            const_cast<ItemEntry*>(itemEntry)->SubClass = 0;
-        }
-    }
-
     // Check loaded DB2 files proper version
-    if (!sItemStore.LookupEntry(68815) ||                   // last client known item added in 4.0.6a
-        !sItemSparseStore.LookupEntry(68815))               // last client known item added in 4.0.6a
+    if (!sItemStore.LookupEntry(72068)             ||       // last item added in 4.2.2 (14545)
+        !sItemExtendedCostStore.LookupEntry(3652)  )        // last item extended cost added in 4.2.2 (14545)
     {
         sLog->outString();
-        sLog->outError("Please extract correct db2 files from client 4.0.6a 13623.");
+        sLog->outError("Please extract correct db2 files from client 4.2.2 14545.");
         exit(1);
     }
 

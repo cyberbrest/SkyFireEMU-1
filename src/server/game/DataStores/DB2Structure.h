@@ -42,14 +42,20 @@
 // Structures used to access raw DB2 data and required packing to portability
 struct ItemEntry
 {
-   uint32   ID;                                             // 0
-   uint32   Class;                                          // 1
-   uint32   SubClass;                                       // 2 some items have strange subclasses
-   int32    Unk0;                                           // 3
-   int32    Material;                                       // 4
-   uint32   DisplayId;                                      // 5
-   uint32   InventoryType;                                  // 6
-   uint32   Sheath;                                         // 7
+    uint32   ID;                                             // 0
+    uint32   Class;                                          // 1
+    uint32   SubClass;                                       // 2
+    int32    Unk0;                                           // 3
+    int32    Material;                                       // 4
+    uint32   DisplayId;                                      // 5
+    uint32   InventoryType;                                  // 6
+    uint32   Sheath;                                         // 7
+};
+
+struct ItemCurrencyCostEntry
+{
+    //uint32  Id;
+    uint32  ItemId;
 };
 
 struct ItemSparseEntry
@@ -121,6 +127,24 @@ struct ItemSparseEntry
     float      StatScalingFactor;                            // 128
     int32      Field130;                                     // 129
     int32      Field131;                                     // 130
+};
+
+#define MAX_ITEM_EXT_COST_ITEMS         5
+#define MAX_ITEM_EXT_COST_CURRENCIES    5
+
+struct ItemExtendedCostEntry
+{
+    uint32      ID;                                         // 0 extended-cost entry id
+    //uint32    reqhonorpoints;                             // 1 required honor points
+    //uint32    reqarenapoints;                             // 2 required arena points
+    uint32      RequiredArenaSlot;                          // 3 arena slot restrictions (min slot value)
+    uint32      RequiredItem[MAX_ITEM_EXT_COST_ITEMS];      // 4-8 required item id
+    uint32      RequiredItemCount[MAX_ITEM_EXT_COST_ITEMS]; // 9-13 required count of 1st item
+    uint32      RequiredPersonalArenaRating;                // 14 required personal arena rating
+    //uint32    ItemPurchaseGroup;                          // 15
+    uint32      RequiredCurrency[MAX_ITEM_EXT_COST_CURRENCIES];// 16-20 required curency id
+    uint32      RequiredCurrencyCount[MAX_ITEM_EXT_COST_CURRENCIES];// 21-25 required curency count
+    //uint32    Unknown[5];                               // 26-30
 };
 
 // GCC has alternative #pragma pack(N) syntax and old gcc version does not support pack(push, N), also any gcc version does not support it at some platform

@@ -1199,13 +1199,14 @@ void AchievementMgrBase::UpdateAchievementCriteria(AchievementCriteriaTypes type
                 SetCriteriaProgress(achievementCriteria, miscValue2, player, PROGRESS_ACCUMULATE);
                 break;
             }
-            // std case: not exist in DBC, not triggered in code as result
-            case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HEALTH:
-            case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_SPELLPOWER:
-            case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_ARMOR:
-            case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_POWER:
-            case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_STAT:
-            case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_RATING:
+            case ACHIEVEMENT_CRITERIA_TYPE_CURRENCY:
+               if (!miscValue1 || !miscValue2)
+                   continue;
+               if (miscValue1 != achievementCriteria->currencyGain.currency)
+                   continue;
+               if (int64(miscValue2) < 0)
+                   continue;
+               SetCriteriaProgress(achievementCriteria, miscValue2, player, PROGRESS_ACCUMULATE);
                 break;
             // FIXME: not triggered in code as result, need to implement
             case ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_RAID:
@@ -1402,9 +1403,6 @@ bool AchievementMgrBase::IsCompletedCriteria(AchievementCriteriaEntry const* ach
         case ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM:
         case ACHIEVEMENT_CRITERIA_TYPE_ROLL_NEED:
         case ACHIEVEMENT_CRITERIA_TYPE_ROLL_GREED:
-        case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HEALTH:
-        case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_SPELLPOWER:
-        case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_ARMOR:
         case ACHIEVEMENT_CRITERIA_TYPE_QUEST_ABANDONED:
         case ACHIEVEMENT_CRITERIA_TYPE_FLIGHT_PATHS_TAKEN:
         case ACHIEVEMENT_CRITERIA_TYPE_ACCEPTED_SUMMONINGS:
@@ -1606,10 +1604,10 @@ bool AchievementMgrBase::CanUpdateCriteria(AchievementCriteriaEntry const* crite
     if (DisableMgr::IsDisabledFor(DISABLE_TYPE_ACHIEVEMENT_CRITERIA, criteria->ID, NULL))
         return false;
 
-    if (_guild && !(achievement->flags & ACHIEVEMENT_FLAG_GUILD_ACHIEVEMENT))
+    if (_guild && !(achievement->flags & ACHIEVEMENT_FLAG_GUILD))
         return false;
 
-    if (!_guild && (achievement->flags & ACHIEVEMENT_FLAG_GUILD_ACHIEVEMENT))
+    if (!_guild && (achievement->flags & ACHIEVEMENT_FLAG_GUILD))
         return false;
 
     if (achievement->mapID != -1 && player->GetMapId() != uint32(achievement->mapID))
@@ -1641,32 +1639,36 @@ bool AchievementMgrBase::CanUpdateCriteria(AchievementCriteriaEntry const* crite
 
     for (uint32 i = 0; i < 3; ++i)
     {
-        if(!criteria->moreRequirement[i])
+        if(!criteria->additionalConditionType[i])
             continue;
 
-        uint32 value = criteria->moreRequirementValue[i];
+        uint32 value = criteria->additionalConditionValue[i];
 
-        switch (criteria->moreRequirement[i])
+        switch (criteria->additionalConditionType[i])
         {
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_GUILD_REP:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_TARGET_MUST_BE_PLAYER:
+                if (!player)
+                    return false;
+                break;
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_GUILD_REPUTATION:
             {
                 if (uint32(player->GetReputationMgr().GetReputation(1168)) < value) // 1168 = Guild faction
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_CREATURE_TYPE:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_TARGET_CREATURE_TYPE:
             {
                 if (miscValue1 != value)
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_AURA:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_SOURCE_HAS_AURA:
             {
                 if (!player->HasAura(value))
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_AURA_ON_TARGET:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_TARGET_HAS_AURA:
             {
                 if (!unit)
                     return false;
@@ -1675,25 +1677,25 @@ bool AchievementMgrBase::CanUpdateCriteria(AchievementCriteriaEntry const* crite
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_RAID_DIFFICULTY:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_RAID_DIFFICULTY:
             {
                 if (uint32(player->GetRaidDifficulty()) != value)
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_PLAYER_CLASS:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_SOURCE_CLASS:
             {
                 if (player->getClass() != value)
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_PLAYER_RACE:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_SOURCE_RACE:
             {
                 if (player->getRace() != value)
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_TARGET_RACE:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_TARGET_RACE:
             {
                 if (!unit)
                     return false;
@@ -1705,7 +1707,7 @@ bool AchievementMgrBase::CanUpdateCriteria(AchievementCriteriaEntry const* crite
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_TARGET_CLASS:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_TARGET_CLASS:
             {
                 if (!unit)
                     return false;
@@ -1717,7 +1719,7 @@ bool AchievementMgrBase::CanUpdateCriteria(AchievementCriteriaEntry const* crite
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_REQUIRES_GUILD_GROUP:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_REQUIRES_GUILD_GROUP:
             {
                 Group* group = player->GetGroup();
                 if (!group)
@@ -1727,7 +1729,7 @@ bool AchievementMgrBase::CanUpdateCriteria(AchievementCriteriaEntry const* crite
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_CREATURE_ID:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_TARGET_CREATURE_ENTRY:
             {
                 if (!unit || unit->GetTypeId() != TYPEID_UNIT)
                     return false;
@@ -1736,7 +1738,7 @@ bool AchievementMgrBase::CanUpdateCriteria(AchievementCriteriaEntry const* crite
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_T_HEALTH_UNDER_PCT:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_TARGET_HEALTH_PERCENT_BELOW:
             {
                 if (!unit)
                     return false;
@@ -1745,26 +1747,26 @@ bool AchievementMgrBase::CanUpdateCriteria(AchievementCriteriaEntry const* crite
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_ZONE_ID:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_TARGET_ZONE:
             {
                 if (player->GetZoneId() != value)
                     return false;
 
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_DRUNKEN_STATE:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_SOURCE_DRUNK_VALUE:
             {
                 if (player->GetDrunkValue() < value) // Not sure on this one
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_PERSONAL_RATING:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_MIN_PERSONAL_RATING:
             {
                 if (miscValue1 < value)
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_ITEM_LEVEL:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_ITEM_LEVEL:
             {
                 ItemTemplate const* proto = sObjectMgr->GetItemTemplate(miscValue1);
                 if (!proto)
@@ -1774,8 +1776,8 @@ bool AchievementMgrBase::CanUpdateCriteria(AchievementCriteriaEntry const* crite
                     return false;
                 break;
             }
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_ITEM_QUALITY_EQUIPPED:
-            case ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_ITEM_QUALITY_LOOTED:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_ITEM_QUALITY_MIN:
+            case ACHIEVEMENT_CRITERIA_ADDITIONAL_CONDITION_ITEM_QUALITY_EQUALS:
             {
                 ItemTemplate const* proto = sObjectMgr->GetItemTemplate(miscValue1);
                 if (!proto)

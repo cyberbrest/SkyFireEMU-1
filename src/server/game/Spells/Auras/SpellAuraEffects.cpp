@@ -720,19 +720,19 @@ int32 AuraEffect::CalculateAmount(Unit* caster)
                     uint32 plrskill = player->GetSkillValue(SKILL_RIDING);
                     uint32 map = GetVirtualMapForMapAndZone(player->GetMapId(), player->GetZoneId());
                     uint32 maxSkill = 0;
-                    for (int i = 0; i < MAX_MOUNT_TYPE_COLUMN; i++)
+                    for (int i = 0; i < MAX_MOUNT_CAPABILITIES; i++)
                     {
-                        const MountCapabilityEntry *cap = sMountCapabilityStore.LookupEntry(type->capabilities[i]);
+                        const MountCapabilityEntry *cap = sMountCapabilityStore.LookupEntry(type->MountCapability[i]);
                         if (!cap)
                             continue;
-                        if (cap->map != -1 && cap->map != map)
+                        if (cap->RequiredMap != -1 && cap->RequiredMap != map)
                             continue;
-                        if (cap->reqSkillLevel && (cap->reqSkillLevel > plrskill || cap->reqSkillLevel <= maxSkill))
+                        if (cap->RequiredRidingSkill && (cap->RequiredRidingSkill > plrskill || cap->RequiredRidingSkill <= maxSkill))
                             continue;
-                        if (cap->reqSpell && !player->HasSpell(cap->reqSpell))
+                        if (cap->RequiredSpell && !player->HasSpell(cap->RequiredSpell))
                             continue;
-                        maxSkill = cap->reqSkillLevel;
-                        spellId = cap->spell;
+                        maxSkill = cap->RequiredRidingSkill;
+                        spellId = cap->SpeedModSpell;
                     }
                     return (int) spellId;
                 }

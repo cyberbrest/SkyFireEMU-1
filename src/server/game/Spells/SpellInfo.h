@@ -236,7 +236,7 @@ public:
     uint32    ApplyAuraName;
     uint32    Amplitude;
     int32     BasePoints;
-    float     BonusCoefficient;
+    float     BonusMultiplier;
     float     DamageMultiplier;
     uint32    ChainTarget;
     int32     DieSides;
