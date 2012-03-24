@@ -1804,6 +1804,9 @@ void World::SetInitialWorldSettings()
     else
         sLog->SetLogDB(false);
 
+    sLog->outString("Initializing Opcodes...");
+    InitOpcodes();
+
     sLog->outString("Loading hotfix info...");
     sObjectMgr->LoadHotfixData();
 

@@ -152,6 +152,7 @@ public:
 
     virtual bool Process(WorldPacket* /*packet*/) { return true; }
     virtual bool ProcessLogout() const { return true; }
+    static Opcodes DropHighBytes(Opcodes opcode);
 
 protected:
     WorldSession* const m_pSession;
@@ -409,11 +410,12 @@ class WorldSession
         void HandleCharCreateCallback(PreparedQueryResult result, CharacterCreateInfo* createInfo);
         void HandlePlayerLoginOpcode(WorldPacket& recvPacket);
 
-        void HandleWorldLoginOpcode(WorldPacket& recvPacket);
+        void HandleLoadScreenOpcode(WorldPacket& recvPacket);
 
         void HandleCharEnum(PreparedQueryResult result);
         void HandlePlayerLogin(LoginQueryHolder * holder);
         void HandleCharFactionOrRaceChange(WorldPacket& recv_data);
+        void HandleRandomizeCharNameOpcode(WorldPacket& recv_data);
 
         // played time
         void HandlePlayedTime(WorldPacket& recvPacket);
@@ -422,6 +424,7 @@ class WorldSession
         void HandleMoveUnRootAck(WorldPacket& recvPacket);
         void HandleMoveRootAck(WorldPacket& recvPacket);
         void HandleLookingForGroup(WorldPacket& recvPacket);
+        void HandleReturnToGraveyard(WorldPacket& recvPacket);
 
         // new inspect
         void HandleInspectOpcode(WorldPacket& recvPacket);
@@ -547,6 +550,7 @@ class WorldSession
         void HandleRaidReadyCheckFinishedOpcode(WorldPacket& recv_data);
         void HandleGroupRaidConvertOpcode(WorldPacket& recv_data);
         void HandleGroupChangeSubGroupOpcode(WorldPacket& recv_data);
+        void HandleGroupSwapSubGroupOpcode(WorldPacket& recv_data);
         void HandleGroupAssistantLeaderOpcode(WorldPacket& recv_data);
         void HandlePartyAssignmentOpcode(WorldPacket& recv_data);
 
@@ -706,6 +710,7 @@ class WorldSession
 
         bool processChatmessageFurtherAfterSecurityChecks(std::string&, uint32);
         void HandleMessagechatOpcode(WorldPacket& recvPacket);
+        void HandleAddonMessagechatOpcode(WorldPacket& recvPacket);
         void SendPlayerNotFoundNotice(std::string name);
         void SendPlayerAmbiguousNotice(std::string name);
         void SendWrongFactionNotice();

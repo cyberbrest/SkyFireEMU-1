@@ -25,7 +25,7 @@
 
 void WorldPacket::compress(uint32 opcode)
 {
-    if (opcode == OPCODE_NOT_FOUND)  // this just doesn't look right, atm not using that define opcode way.
+    if (opcode == UNKNOWN_OPCODE || opcode == NULL_OPCODE)  // this just doesn't look right, atm not using that define opcode way.
         return;
 
     uint32 uncompressedOpcode = GetOpcode();
@@ -42,7 +42,7 @@ void WorldPacket::compress(uint32 opcode)
     reserve(destsize + sizeof(uint32));
     *this << uint32(size);
     append(&storage[0], destsize);
-    SetOpcode(opcode);
+    SetOpcode((Opcodes)opcode);
 
     sLog->outStaticDebug("Successfully compressed opcode %u (len %u) to %u (len %u)",
         uncompressedOpcode, size, opcode, destsize);

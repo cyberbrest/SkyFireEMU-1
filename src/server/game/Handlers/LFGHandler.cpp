@@ -529,10 +529,11 @@ void WorldSession::SendLfgBootPlayer(const LfgPlayerBoot* pBoot)
     }
     sLog->outDebug(LOG_FILTER_NETWORKIO, "SMSG_LFG_BOOT_PLAYER [" UI64FMTD "] inProgress: %u - didVote: %u - agree: %u - victim: [" UI64FMTD "] votes: %u - agrees: %u - left: %u - needed: %u - reason %s",
         guid, uint8(pBoot->inProgress), uint8(playerVote != LFG_ANSWER_PENDING), uint8(playerVote == LFG_ANSWER_AGREE), pBoot->victim, votesNum, agreeNum, secsleft, pBoot->votedNeeded, pBoot->reason.c_str());
-    WorldPacket data(SMSG_LFG_BOOT_PROPOSAL_UPDATE, 1 + 1 + 1 + 8 + 4 + 4 + 4 + 4 + pBoot->reason.length());
+    WorldPacket data(SMSG_LFG_BOOT_PLAYER, 1 + 1 + 1 + 1 + 8 + 4 + 4 + 4 + 4 + pBoot->reason.length());
     data << uint8(pBoot->inProgress);                      // Vote in progress
     data << uint8(playerVote != LFG_ANSWER_PENDING);       // Did Vote
     data << uint8(playerVote == LFG_ANSWER_AGREE);         // Agree
+    data << uint8(0);                                      // Unknown 4.2.2
     data << uint64(pBoot->victim);                         // Victim GUID
     data << uint32(votesNum);                              // Total Votes
     data << uint32(agreeNum);                              // Agree Count

@@ -162,7 +162,7 @@ int WorldSocket::SendPacket (const WorldPacket& pct)
     if (sWorldLog->LogWorld())
     {
         std::string error = "";
-        if (pct.GetOpcode() > OPCODE_NOT_FOUND)
+        if (pct.GetOpcode() == UNKNOWN_OPCODE || pct.GetOpcode() == NULL_OPCODE)
             error = "NOT SEND\n";
         sWorldLog->outTimestampLog ("SERVER:\nSOCKET: %u\nLENGTH: %u\nOPCODE: %s (0x%.4X)\n%sDATA:\n",
                      (uint32) get_handle(),
@@ -183,7 +183,7 @@ int WorldSocket::SendPacket (const WorldPacket& pct)
     }
     //sLog->outString("S: %s (0x%.4X)", LookupOpcodeName (pct.GetOpcode()), pct.GetOpcode());
 
-    if (pct.GetOpcode() > OPCODE_NOT_FOUND)
+    if (pct.GetOpcode() == UNKNOWN_OPCODE || pct.GetOpcode() == NULL_OPCODE)
     {
         sLog->outDebug(LOG_FILTER_NETWORKIO, "Packet %s (%X) not send.\n", LookupOpcodeName (pct.GetOpcode()), pct.GetOpcode());
         return 0;
@@ -519,7 +519,7 @@ int WorldSocket::handle_input_header (void)
 
     header.size -= 4;
 
-    ACE_NEW_RETURN (m_RecvWPct, WorldPacket ((uint16) header.cmd, header.size), -1);
+    ACE_NEW_RETURN (m_RecvWPct, WorldPacket (PacketFilter::DropHighBytes(Opcodes(header.cmd)), header.size), -1);
 
     if (header.size > 0)
     {

@@ -810,7 +810,111 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket & recv_data)
     SendPacket(&data);
 }
 
-void WorldSession::HandleWorldLoginOpcode(WorldPacket& recv_data)
+void WorldSession::HandleAddonMessagechatOpcode(WorldPacket& recvData)
+{
+    Player* sender = GetPlayer();
+    ChatMsg type;
+    
+    switch (recvData.GetOpcode())
+    {
+        case CMSG_MESSAGECHAT_ADDON_BATTLEGROUND:
+            type = CHAT_MSG_BATTLEGROUND;
+            break;
+        case CMSG_MESSAGECHAT_ADDON_GUILD:
+            type = CHAT_MSG_GUILD;
+            break;
+        case CMSG_MESSAGECHAT_ADDON_PARTY:
+            type = CHAT_MSG_PARTY;
+            break;
+        case CMSG_MESSAGECHAT_ADDON_RAID:
+            type = CHAT_MSG_RAID;
+            break;
+        case CMSG_MESSAGECHAT_ADDON_WHISPER:
+            type = CHAT_MSG_WHISPER;
+            break;
+        default:
+            sLog->outDetail("HandleAddonMessagechatOpcode: Unknown addon chat opcode (%u)", recvData.GetOpcode());
+            recvData.hexlike();
+            return;
+    }
+
+    std::string message = "";
+    std::string prefix = "";
+    std::string targetName = "";
+
+    if (type == CHAT_MSG_WHISPER)
+        recvData >> prefix >> targetName >> message;
+    else
+        recvData >> message >> prefix;
+
+    // Logging enabled?
+    if (sWorld->getBoolConfig(CONFIG_CHATLOG_ADDON))
+    {
+        if (message.empty())
+            return;
+
+        // Weird way to log stuff...
+        sScriptMgr->OnPlayerChat(sender, CHAT_MSG_ADDON, LANG_ADDON, message);
+    }
+
+    // Disabled addon channel?
+    if (!sWorld->getBoolConfig(CONFIG_ADDON_CHANNEL))
+        return;
+
+    switch (type)
+    {
+        case CHAT_MSG_BATTLEGROUND:
+        {
+            Group* group = sender->GetGroup();
+            if (!group || !group->isBGGroup())
+                return;
+
+            WorldPacket data;
+            ChatHandler::FillMessageData(&data, this, type, LANG_ADDON, "", 0, message.c_str(), NULL);
+            group->BroadcastPacket(&data, false);
+            break;
+        }
+        case CHAT_MSG_GUILD:
+        {
+            if (sender->GetGuildId())
+                if (Guild* guild = sGuildMgr->GetGuildById(sender->GetGuildId()))
+                    guild->BroadcastToGuild(this, false, message, LANG_ADDON);
+            break;
+        }
+        case CHAT_MSG_WHISPER:
+        {
+            if (!normalizePlayerName(targetName))
+                break;
+            Player* receiver = sObjectAccessor->FindPlayerByName(targetName.c_str());
+            if (!receiver)
+                break;
+
+            sender->Whisper(message, LANG_ADDON, receiver->GetGUID());
+            break;
+        }
+        // Messages sent to "RAID" while in a party will get delivered to "PARTY"
+        case CHAT_MSG_PARTY:
+        case CHAT_MSG_RAID:
+        {
+            
+            Group* group = sender->GetGroup();
+            if (!group || group->isBGGroup())
+                break;
+
+            WorldPacket data;
+            ChatHandler::FillMessageData(&data, this, type, LANG_ADDON, "", 0, message.c_str(), NULL);
+            group->BroadcastPacket(&data, true, -1, group->GetMemberGroup(sender->GetGUID()));
+            break;
+        }
+        default:
+        {
+            sLog->outError("HandleAddonMessagechatOpcode: unknown addon message type %u", type);
+            break;
+        }
+    }
+}
+
+void WorldSession::HandleLoadScreenOpcode(WorldPacket& recv_data)
 {
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Recvd World Login Message");
     uint32 unk;
@@ -2043,5 +2147,30 @@ void WorldSession::HandleCharFactionOrRaceChange(WorldPacket& recv_data)
     data << uint8(hairColor);
     data << uint8(facialHair);
     data << uint8(race);
+    SendPacket(&data);
+}
+
+void WorldSession::HandleRandomizeCharNameOpcode(WorldPacket& recv_data)
+{
+    uint8 gender, race;
+
+    recv_data >> gender;
+    recv_data >> race;
+
+    if (!Player::IsValidRace(race))
+    {
+        sLog->outError("Invalid race (%u) sent by accountId: %u", race, GetAccountId());
+        return;
+    }
+
+    if (!Player::IsValidGender(gender))
+    {
+        sLog->outError("Invalid gender (%u) sent by accountId: %u", gender, GetAccountId());
+        return;
+    }
+
+    WorldPacket data(SMSG_RANDOMIZE_CHAR_NAME, 10);
+    data << uint8(128); // unk1
+    data << *GetRandomCharacterName(race, gender);
     SendPacket(&data);
 }
