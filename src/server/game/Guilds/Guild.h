@@ -753,6 +753,7 @@ public:
     bool AddMember(uint64 guid, uint8 rankId = GUILD_RANK_NONE);
     void DeleteMember(uint64 guid, bool isDisbanding = false, bool isKicked = false);
     bool ChangeMemberRank(uint64 guid, uint8 newRank);
+    bool IsMember(uint64 guid);
     RankInfo & GetRankInfo(uint32 rankId) {return m_ranks[rankId]; }
     Members GetMembers() { return m_members; }
 

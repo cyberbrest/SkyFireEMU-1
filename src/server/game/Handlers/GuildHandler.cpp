@@ -45,20 +45,18 @@ void WorldSession::HandleGuildQueryOpcode(WorldPacket& recvPacket)
 {
     sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Received CMSG_GUILD_QUERY");
 
-    uint64 guildId;
-    uint64 player; //4.0.6a
-    recvPacket >> guildId;
-    recvPacket >> player;
-    // Use received guild id to access guild method (not player's guild id)
-    uint32 lowGuildId = GUID_LOPART(guildId);
-    if (Guild* guild = sGuildMgr->GetGuildById(lowGuildId))
-    {
-        guild->HandleQuery(this);
-    }
-    else
-    {
-        Guild::SendCommandResult(this, GUILD_CREATE_S, ERR_GUILD_PLAYER_NOT_IN_GUILD);
-    }
+    uint64 guildGuid, playerGuid;
+    recvPacket >> guildGuid >> playerGuid;
+    
+    // If guild doesn't exist or player is not part of the guild send error
+    if (Guild* guild = sGuildMgr->GetGuildByGuid(guildGuid))
+        if (guild->IsMember(playerGuid))
+        {
+            guild->HandleQuery(this);
+            return;
+        }
+
+    Guild::SendCommandResult(this, GUILD_CREATE_S, ERR_GUILD_PLAYER_NOT_IN_GUILD);
 }
 
 void WorldSession::HandleGuildCreateOpcode(WorldPacket& recvPacket)
@@ -137,12 +135,24 @@ void WorldSession::HandleGuildRosterOpcode(WorldPacket& recvPacket)
 {
     sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Received CMSG_GUILD_ROSTER");
 
-    uint64 guildGUID, playerGUID;
+    BitStream mask = recvPacket.ReadBitStream(8);
 
-    recvPacket >> guildGUID >> playerGUID;
+    ByteBuffer bytes(8, true);
+    
+    recvPacket.ReadXorByte(mask[0], bytes[7]);
+    recvPacket.ReadXorByte(mask[5], bytes[4]);
+    recvPacket.ReadXorByte(mask[4], bytes[5]);
+    recvPacket.ReadXorByte(mask[7], bytes[0]);
+    recvPacket.ReadXorByte(mask[3], bytes[1]);
+    recvPacket.ReadXorByte(mask[2], bytes[2]);
+    recvPacket.ReadXorByte(mask[1], bytes[6]);
+    recvPacket.ReadXorByte(mask[6], bytes[3]);
 
-    if (Guild* guild = _GetPlayerGuild(this))
-        guild->HandleRoster(this);
+    uint64 guildGuid = BitConverter::ToUInt64(bytes);
+
+    if (Guild* guild = sGuildMgr->GetGuildByGuid(guildGuid))
+        if (guild->IsMember(GetPlayer()->GetGUID()))
+            guild->HandleRoster(this);
 }
 
 void WorldSession::HandleGuildPromoteOpcode(WorldPacket& recvPacket)

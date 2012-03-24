@@ -28,7 +28,7 @@ void WorldSession::SendAuthResponse(uint8 code, bool shortForm, uint32 queuePos)
     packet << uint32(0);                                   // BillingTimeRemaining
     packet << uint8(0);                                    // BillingPlanFlags
     packet << uint32(0);                                   // BillingTimeRested
-    packet << uint8(Expansion());                          // | 0 - normal | 1 - TBC | 2 - WOTLK | 3 - CATA |
+    packet << uint8(Expansion());                          // 0 - normal, 1 - TBC, 2 - WOTLK, 3 - CATA; must be set in database manually for each account
     packet << uint8(Expansion());                          // Server Expansion
 
     if (!shortForm)

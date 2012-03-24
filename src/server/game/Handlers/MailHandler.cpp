@@ -493,13 +493,14 @@ void WorldSession::HandleMailTakeItem(WorldPacket & recv_data)
         player->SendMailResult(mailId, MAIL_ITEM_TAKEN, MAIL_ERR_EQUIP_ERROR, msg);
 }
 
-void WorldSession::HandleMailTakeMoney(WorldPacket & recv_data)
+void WorldSession::HandleMailTakeMoney(WorldPacket& recv_data)
 {
     uint64 mailbox;
+    uint64 money;
     uint32 mailId;
     recv_data >> mailbox;
     recv_data >> mailId;
-    recv_data.read_skip<uint64>();                          //4.0.6a
+    recv_data >> money;
 
     if (!GetPlayer()->GetGameObjectIfCanInteractWith(mailbox, GAMEOBJECT_TYPE_MAILBOX))
         return;
@@ -507,7 +508,8 @@ void WorldSession::HandleMailTakeMoney(WorldPacket & recv_data)
     Player* player = _player;
 
     Mail* m = player->GetMail(mailId);
-    if (!m || m->state == MAIL_STATE_DELETED || m->deliver_time > time(NULL))
+    if ((!m || m->state == MAIL_STATE_DELETED || m->deliver_time > time(NULL)) ||
+        (money > 0 && m->money != money))
     {
         player->SendMailResult(mailId, MAIL_MONEY_TAKEN, MAIL_ERR_INTERNAL_ERROR);
         return;
@@ -515,7 +517,7 @@ void WorldSession::HandleMailTakeMoney(WorldPacket & recv_data)
 
     player->SendMailResult(mailId, MAIL_MONEY_TAKEN, MAIL_OK);
 
-    player->ModifyMoney(m->money);
+    player->ModifyMoney(money);
     m->money = 0;
     m->state = MAIL_STATE_CHANGED;
     player->_mailsUpdated = true;

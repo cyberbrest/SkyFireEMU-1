@@ -33,6 +33,8 @@
 #include "SpellAuras.h"
 #include "Vehicle.h"
 #include "LFGMgr.h"
+#include "DB2Structure.h"
+#include "DB2Stores.h"
 
 class Aura;
 
@@ -49,12 +51,12 @@ class Aura;
 
 void WorldSession::SendPartyResult(PartyOperation operation, const std::string& member, PartyResult res, uint32 val /* = 0 */)
 {
-    WorldPacket data(SMSG_PARTY_COMMAND_RESULT, 4 + member.size() + 1 + 4 + 4);
+    WorldPacket data(SMSG_PARTY_COMMAND_RESULT, 4 + member.size() + 1 + 4 + 4 + 8);
     data << uint32(operation);
     data << member;
     data << uint32(res);
     data << uint32(val);                                    // LFD cooldown related (used with ERR_PARTY_LFG_BOOT_COOLDOWN_S and ERR_PARTY_LFG_BOOT_NOT_ELIGIBLE_S)
-    data << uint64(0);                                      // GUID?
+    data << uint64(0); // player who caused error (in some cases).
 
     SendPacket(&data);
 }
@@ -63,10 +65,36 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket & recv_data)
 {
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Received CMSG_GROUP_INVITE");
 
+    BytesGuid guid;
+    guid.guid = 0;
+    
+    recv_data.ReadByteMask(guid.bytes[6]);
+    recv_data.ReadByteMask(guid.bytes[5]);
+    recv_data.ReadByteMask(guid.bytes[0]);
+    recv_data.ReadByteMask(guid.bytes[3]);
+    recv_data.ReadByteMask(guid.bytes[4]);
+    recv_data.ReadByteMask(guid.bytes[7]);
+    recv_data.ReadByteMask(guid.bytes[1]);
+    recv_data.ReadByteMask(guid.bytes[2]);
+
+    recv_data.read_skip<uint32>();
+    recv_data.read_skip<uint32>();
+
     std::string membername;
     uint32 unk; //groupType?
     recv_data >> membername;
     recv_data >> unk; //in CMSG_GROUP_ACCEPT too.
+
+    recv_data.ReadByteSeq(guid.bytes[0]);
+    recv_data.ReadByteSeq(guid.bytes[7]);
+    recv_data.ReadByteSeq(guid.bytes[4]);
+    recv_data.ReadByteSeq(guid.bytes[1]);
+    recv_data.ReadByteSeq(guid.bytes[2]);
+    recv_data.ReadByteSeq(guid.bytes[6]);
+    recv_data.ReadByteSeq(guid.bytes[5]);
+    std::string string0;
+    recv_data >> string0;
+    recv_data.ReadByteSeq(guid.bytes[3]);
 
     // attempt add selected player
 
@@ -556,7 +584,7 @@ void WorldSession::HandleRaidTargetUpdateOpcode(WorldPacket & recv_data)
     }
 }
 
-void WorldSession::HandleGroupRaidConvertOpcode(WorldPacket & /*recv_data*/)
+void WorldSession::HandleGroupRaidConvertOpcode(WorldPacket& recv_data)
 {
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Received CMSG_GROUP_RAID_CONVERT");
 
@@ -567,14 +595,22 @@ void WorldSession::HandleGroupRaidConvertOpcode(WorldPacket & /*recv_data*/)
     if (_player->InBattleground())
         return;
 
-    /** error handling **/
+    // error handling
     if (!group->IsLeader(GetPlayer()->GetGUID()) || group->GetMembersCount() < 2)
         return;
-    /********************/
 
     // everything's fine, do it (is it 0 (PARTY_OP_INVITE) correct code)
     SendPartyResult(PARTY_OP_INVITE, "", ERR_PARTY_RESULT_OK);
-    group->ConvertToRaid();
+
+    // New 4.x: it is now possible to convert a raid to a group if member count is 5 or less
+
+    bool toRaid;
+    recv_data >> toRaid;
+
+    if (toRaid)
+        group->ConvertToRaid();
+    else
+        group->ConvertToGroup();
 }
 
 void WorldSession::HandleGroupChangeSubGroupOpcode(WorldPacket & recv_data)

@@ -443,12 +443,9 @@ void WorldSession::SendItemSparseDb2Reply(uint32 entry)
 
 void WorldSession::HandleReadItem(WorldPacket & recv_data)
 {
-    //sLog->outDebug(LOG_FILTER_PACKETIO, "WORLD: CMSG_READ_ITEM");
-
     uint8 bag, slot;
     recv_data >> bag >> slot;
 
-    //sLog->outDetail("STORAGE: Read bag = %u, slot = %u", bag, slot);
     Item* pItem = _player->GetItemByPos(bag, slot);
 
     if (pItem && pItem->GetTemplate()->PageText)
@@ -458,7 +455,7 @@ void WorldSession::HandleReadItem(WorldPacket & recv_data)
         InventoryResult msg = _player->CanUseItem(pItem);
         if (msg == EQUIP_ERR_OK)
         {
-            data.Initialize (SMSG_READ_ITEM_OK, 8);
+            data.Initialize(SMSG_READ_ITEM_OK, 8);
             sLog->outDetail("STORAGE: Item page sent");
         }
         else
@@ -694,17 +691,12 @@ void WorldSession::HandleBuyItemInSlotOpcode(WorldPacket & recv_data)
 void WorldSession::HandleBuyItemOpcode(WorldPacket & recv_data)
 {
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Received CMSG_BUY_ITEM");
-    uint64 vendorguid;
-    uint8 unk;
+    uint64 vendorguid, unk2; // unk2 can be 0?
     uint32 item, slot, count;
-    uint64 unk1;
-    uint8 unk2;
+    uint8 unk1; // if this is == 2 then the count might be multiplied by 100
+    int8 unk3; // only known value = -1, according to the client it can take more values
 
-    recv_data >> vendorguid;
-    recv_data >> unk;                                       // 4.0.6
-    recv_data >> item >> slot >> count;
-    recv_data >> unk1;                                      // 4.0.6
-    recv_data >> unk2;
+    recv_data >> vendorguid >> unk1 >> item >> slot >> count >> unk2 >> unk3;
 
     // client expects count starting at 1, and we send vendorslot+1 to client already
     if (slot > 0)
@@ -749,13 +741,30 @@ void WorldSession::SendListInventory(uint64 vendorGuid)
     if (vendor->HasUnitState(UNIT_STATE_MOVING))
         vendor->StopMoving();
 
+    uint8* bytes = (uint8*)&vendorGuid;
+
     VendorItemData const* items = vendor->GetVendorItems();
     if (!items)
     {
         WorldPacket data(SMSG_LIST_INVENTORY, 8 + 1 + 1 + 2);   // Checked in 406
-        data << uint64(vendorGuid);
+        data.WriteByteMask(bytes[5]);
+        data.WriteByteMask(bytes[6]);
+        data.WriteByteMask(bytes[1]);
+        data.WriteByteMask(bytes[2]);
+        data.WriteByteMask(bytes[3]);
+        data.WriteByteMask(bytes[0]);
+        data.WriteByteMask(bytes[7]);
+        data.WriteByteMask(bytes[4]);
+
+        data.WriteByteSeq(bytes[2]);
+        data.WriteByteSeq(bytes[3]);
+
         data << uint8(0);                                   // count==0, next will be error code
-        data << uint8(0);                                   // "Vendor has no inventory"
+        data << uint8(0xA0);                                // Only seen 0xA0 (160) so far ( should we send 0 here?)
+
+        data.WriteByteSeq(bytes[4]);
+        data.WriteByteSeq(bytes[7]);
+        data.WriteByteSeq(bytes[6]);
         SendPacket(&data);
         return;
     }
@@ -764,10 +773,31 @@ void WorldSession::SendListInventory(uint64 vendorGuid)
     uint8 count = 0;
 
     WorldPacket data(SMSG_LIST_INVENTORY, 8+1+itemCount*9*4+1*itemCount+2);  // Checked in 406
-    data << uint64(vendorGuid);
+
+    data.WriteByteMask(bytes[5]);
+    data.WriteByteMask(bytes[6]);
+    data.WriteByteMask(bytes[1]);
+    data.WriteByteMask(bytes[2]);
+    data.WriteByteMask(bytes[3]);
+    data.WriteByteMask(bytes[0]);
+    data.WriteByteMask(bytes[7]);
+    data.WriteByteMask(bytes[4]);
+
+    data.WriteByteSeq(bytes[2]);
+    data.WriteByteSeq(bytes[3]);
 
     size_t countPos = data.wpos();
-    data << uint8(count);
+    data << uint32(count);
+
+    data.WriteByteSeq(bytes[5]);
+    data.WriteByteSeq(bytes[0]);
+    data.WriteByteSeq(bytes[1]);
+
+    data << uint8(0xA0); // Only seen 0xA0 (160) so far
+
+    data.WriteByteSeq(bytes[4]);
+    data.WriteByteSeq(bytes[7]);
+    data.WriteByteSeq(bytes[6]);
 
     float discountMod = _player->GetReputationPriceDiscount(vendor);
 
@@ -817,28 +847,27 @@ void WorldSession::SendListInventory(uint64 vendorGuid)
                 // reputation discount
                 int32 price = item->IsGoldRequired(itemTemplate) ? uint32(floor(itemTemplate->BuyPrice * discountMod)) : 0;
 
+                data << uint32(itemTemplate->MaxDurability);
                 data << uint32(slot + 1);       // client expects counting to start at 1
-                data << uint32(1); // unk 4.0.1 always 1
                 data << uint32(item->item);
+                data << uint32(0);              // Always 0?
                 data << uint32(itemTemplate->DisplayInfoID);
                 data << int32(leftInStock);
-                data << uint32(price);
-                data << uint32(itemTemplate->MaxDurability);
                 data << uint32(itemTemplate->BuyCount);
                 data << uint32(item->ExtendedCost);
-                data << uint8(0); // unk 4.0.1
+                data << uint32(1);              // Always 1?
+                data << uint32(price);
             }
         }
     }
 
     if (count == 0)
     {
-        data << uint8(0);
         SendPacket(&data);
         return;
     }
 
-    data.put<uint8>(countPos, count);
+    data.put<uint32>(countPos, count);
     SendPacket(&data);
 }
 
@@ -1364,15 +1393,15 @@ void WorldSession::HandleCancelTempEnchantmentOpcode(WorldPacket& recv_data)
 {
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: CMSG_CANCEL_TEMP_ENCHANTMENT");
 
-    uint32 eslot;
+    uint32 slot;
 
-    recv_data >> eslot;
+    recv_data >> slot;
 
     // apply only to equipped item
-    if (!Player::IsEquipmentPos(INVENTORY_SLOT_BAG_0, eslot))
+    if (!Player::IsEquipmentPos(INVENTORY_SLOT_BAG_0, slot))
         return;
 
-    Item* item = GetPlayer()->GetItemByPos(INVENTORY_SLOT_BAG_0, eslot);
+    Item* item = GetPlayer()->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 
     if (!item)
         return;
@@ -1429,7 +1458,7 @@ void WorldSession::HandleItemTextQuery(WorldPacket & recv_data )
 
     sLog->outDebug(LOG_FILTER_NETWORKIO, "CMSG_ITEM_TEXT_QUERY item guid: %u", GUID_LOPART(itemGuid));
 
-    WorldPacket data(SMSG_ITEM_TEXT_QUERY_RESPONSE, (4+10));    // guess size
+    WorldPacket data(SMSG_ITEM_TEXT_QUERY_RESPONSE, 14);    // guess size
 
     if (Item* item = _player->GetItemByGuid(itemGuid))
     {

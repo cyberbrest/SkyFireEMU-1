@@ -24,18 +24,19 @@ void WorldSession::HandleJoinChannel(WorldPacket& recvPacket)
 {
     sLog->outDebug(LOG_FILTER_NETWORKIO, "Opcode %u", recvPacket.GetOpcode());
 
-    uint32 channel_id;
+    uint32 channelId;
     uint8 unknown1, unknown2;
-    std::string password, channelname;
+    std::string channelName, pass;
 
-    recvPacket >> channel_id;
+    recvPacket >> channelId;
     recvPacket >> unknown1 >> unknown2;
-    recvPacket >> password;
-    recvPacket >> channelname;
+    recvPacket >> pass;
 
-    if (channel_id)
+    recvPacket >> channelName;
+
+    if (channelId)
     {
-        ChatChannelsEntry const* channel = sChatChannelsStore.LookupEntry(channel_id);
+        ChatChannelsEntry const* channel = sChatChannelsStore.LookupEntry(channelId);
         if (!channel)
             return;
 
@@ -47,14 +48,14 @@ void WorldSession::HandleJoinChannel(WorldPacket& recvPacket)
             return;
     }
 
-    if (channelname.empty())
+    if (channelName.empty())
         return;
 
     if (ChannelMgr* cMgr = channelMgr(_player->GetTeam()))
     {
         cMgr->team = _player->GetTeam();
-        if (Channel* chn = cMgr->GetJoinChannel(channelname, channel_id))
-            chn->Join(_player->GetGUID(), password.c_str());
+        if (Channel* chn = cMgr->GetJoinChannel(channelName, channelId))
+            chn->Join(_player->GetGUID(), pass.c_str());
     }
 }
 

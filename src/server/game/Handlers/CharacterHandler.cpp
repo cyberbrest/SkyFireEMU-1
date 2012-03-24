@@ -27,7 +27,6 @@
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "DatabaseEnv.h"
-
 #include "ArenaTeam.h"
 #include "Chat.h"
 #include "Group.h"
@@ -48,6 +47,7 @@
 #include "BattlefieldMgr.h"
 #include "AccountMgr.h"
 #include "LFGMgr.h"
+#include "DBCStores.h"
 
 class LoginQueryHolder : public SQLQueryHolder
 {
@@ -215,30 +215,100 @@ bool LoginQueryHolder::Initialize()
 
 void WorldSession::HandleCharEnum(PreparedQueryResult result)
 {
-    WorldPacket data(SMSG_CHAR_ENUM, 100);                  // we guess size
+    WorldPacket data(SMSG_CHAR_ENUM, 270);
 
-    uint8 num = 0;
+    data << uint8(0x80); // 0 causes the client to free memory of charlist
+    data << uint32(0); // number of characters
+    data << uint32(0); // unk loop counter
 
-    data << num;
-
-    _allowedCharsToLogin.clear();
     if (result)
     {
+        typedef std::pair<uint32, uint64> Guids;
+        std::vector<Guids> guidsVect;
+        ByteBuffer buffer;
+        _allowedCharsToLogin.clear();
+
         do
         {
-            uint32 guidlow = (*result)[0].GetUInt32();
-            sLog->outDetail("Loading char guid %u from account %u.", guidlow, GetAccountId());
-            if (Player::BuildEnumData(result, &data))
+            uint32 GuidLow = (*result)[0].GetUInt32();
+            uint64 GuildGuid = (*result)[13].GetUInt32();//TODO: store as uin64
+
+            guidsVect.push_back(std::make_pair(GuidLow, GuildGuid));
+
+            sLog->outDetail("Loading char guid %u from account %u.", GuidLow, GetAccountId());
+
+            if (!Player::BuildEnumData(result, &buffer))
             {
-                _allowedCharsToLogin.insert(guidlow);
-                ++num;
+                sLog->outError("Building enum data for SMSG_CHAR_ENUM has failed, aborting");
+                return;
             }
+            _allowedCharsToLogin.insert(GuidLow);
         }
         while (result->NextRow());
+
+        for (std::vector<Guids>::iterator itr = guidsVect.begin(); itr != guidsVect.end(); ++itr)
+        {
+            uint32 GuidLow = (*itr).first;
+            uint64 GuildGuid = (*itr).second;
+
+            uint8 Guid0 = uint8(GuidLow);
+            uint8 Guid1 = uint8(GuidLow >> 8);
+            uint8 Guid2 = uint8(GuidLow >> 16);
+            uint8 Guid3 = uint8(GuidLow >> 24);
+
+            for (uint8 i = 0; i < 17; ++i)
+            {
+                switch(i)
+                {
+                    //case 14:
+                    //    data.writeBit(1);//unk
+                    //    break;
+                    case 11: data.WriteBit(Guid0 ? 1 : 0); break;
+                    case 12: data.WriteBit(Guid1 ? 1 : 0); break;
+                    case 9: data.WriteBit(Guid2 ? 1 : 0); break;
+                    case 8: data.WriteBit(Guid3 ? 1 : 0); break;
+                    /*case 15:
+                        if(uint8(GuildGuid))
+                            data.writeBit(1);
+                        break;
+                    case 4:
+                        if(uint8(GuildGuid >> 8))
+                            data.writeBit(1);
+                        break;
+                    case 13:
+                        if(uint8(GuildGuid >> 16))
+                            data.writeBit(1);
+                        break;
+                    case 2:
+                        if(uint8(GuildGuid >> 24))
+                            data.writeBit(1);
+                        break;*/
+                    /*case 0:
+                        if(uint8(GuildGuid >> 32))
+                            data.writeBit(1);
+                        break;
+                    case 0:
+                        if(uint8(GuildGuid >> 40))
+                            data.writeBit(1);
+                        break;*/
+                    /*case 5:
+                        if(uint8(GuildGuid >> 48))
+                            data.writeBit(1);
+                        break;
+                    case 3:
+                        if(uint8(GuildGuid >> 56))
+                            data.writeBit(1);
+                        break;*/
+                    default:
+                        data.WriteBit(0);
+                        break;
+                }
+            }
+        }
+        data.FlushBits();
+        data.append(buffer);
+        data.put<uint32>(1, guidsVect.size());
     }
-
-    data.put<uint8>(0, num);
-
     SendPacket(&data);
 }
 
@@ -935,7 +1005,22 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket & recv_data)
 
     sLog->outStaticDebug("WORLD: Recvd Player Logon Message");
 
-    recv_data >> playerGuid;
+    BitStream mask = recv_data.ReadBitStream(8);
+
+    ByteBuffer bytes(8, true);
+
+    recv_data.ReadXorByte(mask[6], bytes[5]);
+    recv_data.ReadXorByte(mask[0], bytes[0]);
+    recv_data.ReadXorByte(mask[4], bytes[3]);
+    recv_data.ReadXorByte(mask[1], bytes[4]);
+    recv_data.ReadXorByte(mask[2], bytes[7]);
+    recv_data.ReadXorByte(mask[5], bytes[2]);
+    recv_data.ReadXorByte(mask[7], bytes[6]);
+    recv_data.ReadXorByte(mask[3], bytes[1]);
+
+    playerGuid = BitConverter::ToUInt64(bytes);
+
+    sLog->outDebug(LOG_FILTER_NETWORKIO, "Character (Guid: %u) logging in", GUID_LOPART(playerGuid));
 
     if (!CharCanLogin(GUID_LOPART(playerGuid)))
     {
@@ -989,9 +1074,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     LoadAccountData(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOADACCOUNTDATA), PER_CHARACTER_CACHE_MASK);
     SendAccountDataTimes(PER_CHARACTER_CACHE_MASK);
 
-    data.Initialize(SMSG_FEATURE_SYSTEM_STATUS, 2);         // added in 2.2.0
+    data.Initialize(SMSG_FEATURE_SYSTEM_STATUS, 7);         // checked in 4.2.2
     data << uint8(2);                                       // unknown value
-    data << uint8(0);                                       // enable(1)/disable(0) voice chat interface in client
+    data << uint8(0);                                       // enable(1) / disable(0) voice chat interface in client
+    data << uint32(0);                                      // Complain System Status
     SendPacket(&data);
 
     // Send MOTD
@@ -1905,6 +1991,7 @@ void WorldSession::HandleCharFactionOrRaceChange(WorldPacket& recv_data)
     switch (race)
     {
         case RACE_ORC:
+        case RACE_GOBLIN:
         case RACE_TAUREN:
         case RACE_UNDEAD_PLAYER:
         case RACE_TROLL:
@@ -1917,7 +2004,7 @@ void WorldSession::HandleCharFactionOrRaceChange(WorldPacket& recv_data)
 
     // Switch Languages
     // delete all languages first
-    trans->PAppend("DELETE FROM `character_skills` WHERE `skill` IN (98, 113, 759, 111, 313, 109, 115, 315, 673, 137) AND `guid`='%u'", lowGuid);
+    trans->PAppend("DELETE FROM `character_skills` WHERE `skill` IN (98, 113, 759, 111, 313, 109, 115, 315, 673, 137, 791, 792) AND `guid`='%u'", lowGuid);
 
     // now add them back
     if (team == BG_TEAM_ALLIANCE)
@@ -1937,6 +2024,9 @@ void WorldSession::HandleCharFactionOrRaceChange(WorldPacket& recv_data)
         case RACE_NIGHTELF:
             trans->PAppend("INSERT INTO `character_skills` (guid, skill, value, max) VALUES (%u, 113, 300, 300)", lowGuid);
             break;
+        case RACE_WORGEN:
+            trans->PAppend("INSERT INTO `character_skills` (guid, skill, value, max) VALUES (%u, 791, 300, 300)", lowGuid);
+            break;
         }
     }
     else if (team == BG_TEAM_HORDE)
@@ -1955,6 +2045,9 @@ void WorldSession::HandleCharFactionOrRaceChange(WorldPacket& recv_data)
             break;
         case RACE_BLOODELF:
             trans->PAppend("INSERT INTO `character_skills` (guid, skill, value, max) VALUES (%u, 137, 300, 300)", lowGuid);
+            break;
+        case RACE_GOBLIN:
+            trans->PAppend("INSERT INTO `character_skills` (guid, skill, value, max) VALUES (%u, 792, 300, 300)", lowGuid);
             break;
         }
     }

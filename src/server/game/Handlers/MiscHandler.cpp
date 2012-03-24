@@ -1087,12 +1087,26 @@ void WorldSession::HandleNextCinematicCamera(WorldPacket & /*recv_data*/)
 
 void WorldSession::HandleMoveTimeSkippedOpcode(WorldPacket & recv_data)
 {
-    /*  WorldSession::Update(getMSTime());*/
-    sLog->outStaticDebug("WORLD: Time Lag/Synchronization Resent/Update");
+    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Received CMSG_MOVE_TIME_SKIPPED");
 
-    uint64 guid;
-    recv_data.readPackGUID(guid);
-    recv_data.read_skip<uint32>();
+    BitStream mask = recv_data.ReadBitStream(8);
+
+    uint32 time;
+    recv_data >> time;
+
+    ByteBuffer bytes(8, true);
+    recv_data.ReadXorByte(mask[0], bytes[1]);
+    recv_data.ReadXorByte(mask[1], bytes[4]);
+    recv_data.ReadXorByte(mask[7], bytes[2]);
+    recv_data.ReadXorByte(mask[5], bytes[5]);
+    recv_data.ReadXorByte(mask[3], bytes[0]);
+    recv_data.ReadXorByte(mask[6], bytes[7]);
+    recv_data.ReadXorByte(mask[2], bytes[6]);
+    recv_data.ReadXorByte(mask[4], bytes[3]);
+
+    uint64 guid = BitConverter::ToUInt64(bytes);
+
+    //TODO!
     /*
         uint64 guid;
         uint32 time_skipped;
@@ -1216,7 +1230,7 @@ void WorldSession::HandleInspectOpcode(WorldPacket& recv_data)
     if (!player)                                                // wrong player
         return;
 
-    uint32 talent_points = 0x29;
+    uint32 talent_points = 41;
     WorldPacket data(SMSG_INSPECT_TALENT, 8+4+talent_points);
 
     data << uint64(player->GetGUID());
@@ -1259,14 +1273,11 @@ void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
         return;
     }
 
-    WorldPacket data(SMSG_INSPECT_HONOR_STATS, 8+1+4*4);
-    data << uint64(player->GetGUID());
-    data << uint8(player->GetCurrency(CURRENCY_TYPE_HONOR_POINTS));
+    WorldPacket data(SMSG_INSPECT_HONOR_STATS, 4+1+4+8);
     data << uint32(player->GetUInt32Value(PLAYER_FIELD_KILLS));
-    data << uint8(0);
+    data << uint8(0); // rank
     data << uint32(player->GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS));
-    data << uint32(0);
-    data << uint32(0);
+    data << uint64(player->GetGUID());
     SendPacket(&data);
 }
 
@@ -1394,8 +1405,9 @@ void WorldSession::HandleComplainOpcode(WorldPacket & recv_data)
     // if it's mail spam - ALL mails from this spammer automatically removed by client
 
     // Complaint Received message
-    WorldPacket data(SMSG_COMPLAIN_RESULT, 1);
-    data << uint8(0);
+    WorldPacket data(SMSG_COMPLAIN_RESULT, 2);
+    data << uint8(0); // value 1 resets CGChat::m_complaintsSystemStatus in client. (unused?)
+    data << uint8(0); // value 0xC generates a "CalendarError" in client.
     SendPacket(&data);
 
     sLog->outDebug(LOG_FILTER_NETWORKIO, "REPORT SPAM: type %u, guid %u, unk1 %u, unk2 %u, unk3 %u, unk4 %u, message %s", spam_type, GUID_LOPART(spammer_guid), unk1, unk2, unk3, unk4, description.c_str());
@@ -1473,7 +1485,7 @@ void WorldSession::HandleTimeSyncResp(WorldPacket & recv_data)
     sLog->outDebug(LOG_FILTER_NETWORKIO, "CMSG_TIME_SYNC_RESP");
 
     uint32 counter, clientTicks;
-    recv_data >> counter >> clientTicks;
+    recv_data >> clientTicks >> counter;
 
     if (counter != _player->m_timeSyncCounter - 1)
         sLog->outDebug(LOG_FILTER_NETWORKIO, "Wrong time sync counter from player %s (cheater?)", _player->GetName());
