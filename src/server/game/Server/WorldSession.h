@@ -82,6 +82,12 @@ struct AccountData
     std::string Data;
 };
 
+union BytesGuid
+{
+    uint8 bytes[8];
+    uint64 guid;
+};
+
 enum PartyOperation
 {
     PARTY_OP_INVITE = 0,
@@ -234,7 +240,7 @@ class WorldSession
         void SendAddonsInfo();
 
         void ReadMovementInfo(WorldPacket& data, MovementInfo* mi);
-        void WriteMovementInfo(WorldPacket* data, MovementInfo* mi);
+        void WriteMovementInfo(WorldPacket& data, MovementInfo* mi);
 
         void SendPacket(WorldPacket const* packet);
         void SendNotification(const char *format, ...) ATTR_PRINTF(2, 3);
