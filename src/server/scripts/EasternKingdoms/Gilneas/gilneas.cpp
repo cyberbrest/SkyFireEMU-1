@@ -498,7 +498,7 @@ public:
             {
                 if (tAnimate <= diff)
                 {
-                    me->HandleEmoteCommand(EMOTE_ONESHOT_ATTACKUNARMED);
+                    me->HandleEmoteCommand(EMOTE_ONESHOT_ATTACK_UNARMED);
                     tAnimate = DELAY_ANIMATE;
                     playSound = true;
                 }
@@ -925,7 +925,7 @@ public:
             {
                 if (tAnimate <= diff)
                 {
-                    me->HandleEmoteCommand(EMOTE_ONESHOT_ATTACKUNARMED);
+                    me->HandleEmoteCommand(EMOTE_ONESHOT_ATTACK_UNARMED);
                     tAnimate = DELAY_ANIMATE;
                     playSound = true;
                 }

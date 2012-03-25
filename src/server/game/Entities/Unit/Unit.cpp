@@ -1311,9 +1311,9 @@ void Unit::DealMeleeDamage(CalcDamageInfo *damageInfo, bool durabilityLoss)
 
     // Hmmmm dont like this emotes client must by self do all animations
     if (damageInfo->HitInfo & HITINFO_CRITICALHIT)
-        victim->HandleEmoteCommand(EMOTE_ONESHOT_WOUNDCRITICAL);
+        victim->HandleEmoteCommand(EMOTE_ONESHOT_WOUND_CRITICAL);
     if (damageInfo->blocked_amount && damageInfo->TargetState != VICTIMSTATE_BLOCKS)
-        victim->HandleEmoteCommand(EMOTE_ONESHOT_PARRYSHIELD);
+        victim->HandleEmoteCommand(EMOTE_ONESHOT_PARRY_SHIELD);
 
     if (damageInfo->TargetState == VICTIMSTATE_PARRY)
     {
@@ -9357,10 +9357,6 @@ void Unit::setPowerType(Powers new_powertype)
         case POWER_ENERGY:
             SetMaxPower(POWER_ENERGY, GetCreatePowers(POWER_ENERGY));
             break;
-        case POWER_HAPPINESS:
-            SetMaxPower(POWER_HAPPINESS, GetCreatePowers(POWER_HAPPINESS));
-            SetPower(POWER_HAPPINESS, GetCreatePowers(POWER_HAPPINESS));
-            break;
     }
 }
 
@@ -13698,7 +13694,6 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
         case UNIT_MOD_RAGE:
         case UNIT_MOD_FOCUS:
         case UNIT_MOD_ENERGY:
-        case UNIT_MOD_HAPPINESS:
         case UNIT_MOD_RUNE:
         case UNIT_MOD_RUNIC_POWER:          UpdateMaxPower(GetPowerTypeByAuraGroup(unitMod));          break;
 
@@ -13822,7 +13817,6 @@ Powers Unit::GetPowerTypeByAuraGroup(UnitMods unitMod) const
         case UNIT_MOD_RAGE:        return POWER_RAGE;
         case UNIT_MOD_FOCUS:       return POWER_FOCUS;
         case UNIT_MOD_ENERGY:      return POWER_ENERGY;
-        case UNIT_MOD_HAPPINESS:   return POWER_HAPPINESS;
         case UNIT_MOD_RUNE:        return POWER_RUNE;
         case UNIT_MOD_RUNIC_POWER: return POWER_RUNIC_POWER;
         default:
@@ -13954,10 +13948,6 @@ void Unit::SetPower(Powers power, int32 val)
             if (owner && (owner->GetTypeId() == TYPEID_PLAYER) && owner->ToPlayer()->GetGroup())
                 owner->ToPlayer()->SetGroupUpdateFlag(GROUP_UPDATE_FLAG_PET_CUR_POWER);
         }
-
-        // Update the pet's character sheet with happiness damage bonus
-        if (pet->getPetType() == HUNTER_PET && power == POWER_HAPPINESS)
-            pet->UpdateDamagePhysical(BASE_ATTACK);
     }
 }
 
@@ -14004,15 +13994,13 @@ int32 Unit::GetCreatePowers(Powers power) const
             return (GetTypeId() == TYPEID_PLAYER || !((Creature const*)this)->isPet() || ((Pet const*)this)->getPetType() != HUNTER_PET ? 0 : 100);
         case POWER_ENERGY:
             return 100;
-        case POWER_HAPPINESS:
-            return (GetTypeId() == TYPEID_PLAYER || !((Creature const*)this)->isPet() || ((Pet const*)this)->getPetType() != HUNTER_PET ? 0 : 1050000);
         case POWER_RUNIC_POWER:
             return 1000;
         case POWER_RUNE:
             return 0;
         case POWER_HEALTH:
             return 0;
-        case POWER_SOULSHARDS:
+        case POWER_SOULSHARD:
             return (GetTypeId() == TYPEID_PLAYER && ToPlayer()->getClass() == CLASS_WARLOCK ? 3 : 0);
         case POWER_ECLIPSE:
             return (GetTypeId() == TYPEID_PLAYER && ToPlayer()->getClass() == CLASS_DRUID ? 100 : 0); // Should be -100 to 100 this needs the power to be int32 instead of uint32

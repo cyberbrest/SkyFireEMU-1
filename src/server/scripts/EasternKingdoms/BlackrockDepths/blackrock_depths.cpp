@@ -797,7 +797,7 @@ public:
                 instance->SetData(DATA_SUPPLY_ROOM, ENCOUNTER_STATE_IN_PROGRESS);
                 break;
             case 13:
-                me->HandleEmoteCommand(EMOTE_STATE_USESTANDING);//EMOTE_STATE_WORK
+                me->HandleEmoteCommand(EMOTE_STATE_USE_STANDING);//EMOTE_STATE_WORK
                 break;
             case 14:
                 instance->SetData(DATA_GATE_SR, 0);
@@ -807,7 +807,7 @@ public:
                 me->Say(SAY_WINDSOR_9, LANG_UNIVERSAL, PlayerGUID);
                 break;
             case 17:
-                me->HandleEmoteCommand(EMOTE_STATE_USESTANDING);//EMOTE_STATE_WORK
+                me->HandleEmoteCommand(EMOTE_STATE_USE_STANDING);//EMOTE_STATE_WORK
                 break;
             case 18:
                 instance->SetData(DATA_GATE_SC, 0);
@@ -1290,10 +1290,10 @@ public:
                 me->HandleEmoteCommand(EMOTE_ONESHOT_KICK);
                 break;
             case 2:
-                me->HandleEmoteCommand(EMOTE_ONESHOT_ATTACKUNARMED);
+                me->HandleEmoteCommand(EMOTE_ONESHOT_ATTACK_UNARMED);
                 break;
             case 3:
-                me->HandleEmoteCommand(EMOTE_ONESHOT_ATTACKUNARMED);
+                me->HandleEmoteCommand(EMOTE_ONESHOT_ATTACK_UNARMED);
                 break;
             case 4:
                 me->HandleEmoteCommand(EMOTE_ONESHOT_KICK);

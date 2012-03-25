@@ -2558,8 +2558,8 @@ void Player::Regenerate(Powers power)
                 addvalue += GetFloatValue(UNIT_FIELD_POWER_REGEN_INTERRUPTED_FLAT_MODIFIER) *  ManaIncreaseRate * 0.001f * _regenTimer * haste;
             else
                 addvalue += GetFloatValue(UNIT_FIELD_POWER_REGEN_FLAT_MODIFIER) * ManaIncreaseRate * 0.001f * _regenTimer * haste;
-            break;
         }
+        break;
         case POWER_RAGE:                                    // Regenerate rage
         {
             if (!isInCombat() && !HasAuraType(SPELL_AURA_INTERRUPT_REGEN))
@@ -2567,19 +2567,16 @@ void Player::Regenerate(Powers power)
                 float RageDecreaseRate = sWorld->getRate(RATE_POWER_RAGE_LOSS);
                 addvalue += -20 * RageDecreaseRate / haste;               // 2 rage by tick (= 2 seconds => 1 rage/sec)
             }
-            break;
         }
+        break;
         case POWER_HOLY_POWER:                              // Regenerate holy power
         {
             if (!isInCombat())
                 addvalue += -0.2f;               // remove 1 each 10 sec
-            break;
         }
+        break;
         case POWER_ENERGY:                                  // Regenerate energy (rogue)
             addvalue += 0.01f * _regenTimer * sWorld->getRate(RATE_POWER_ENERGY) * haste;
-            break;
-        case POWER_FOCUS:
-            addvalue += 4.0f * _modAttackSpeedPct[RANGED_ATTACK] * sWorld->getRate(RATE_POWER_FOCUS) * haste;
             break;
         case POWER_RUNIC_POWER:
         {
@@ -2588,10 +2585,12 @@ void Player::Regenerate(Powers power)
                 float RunicPowerDecreaseRate = sWorld->getRate(RATE_POWER_RUNICPOWER_LOSS);
                 addvalue += -30 * RunicPowerDecreaseRate;         // 3 RunicPower by tick
             }
-            break;
         }
+        break;
+        case POWER_FOCUS:
+            addvalue += 4.0f * _modAttackSpeedPct[RANGED_ATTACK] * sWorld->getRate(RATE_POWER_FOCUS) * haste;
+            break;
         case POWER_RUNE:
-        case POWER_HAPPINESS:
         case POWER_HEALTH:
             break;
         default:
@@ -3131,7 +3130,6 @@ void Player::GiveLevel(uint8 level)
     if (uint32(GetPower(POWER_RAGE)) > uint32(GetMaxPower(POWER_RAGE)))
         SetPower(POWER_RAGE, GetMaxPower(POWER_RAGE));
     SetPower(POWER_FOCUS, 0);
-    SetPower(POWER_HAPPINESS, 0);
 
     _ApplyAllLevelScaleItemMods(true);
 
@@ -3356,7 +3354,6 @@ void Player::InitStatsForLevel(bool reapplyMods)
     if (uint32(GetPower(POWER_RAGE)) > uint32(GetMaxPower(POWER_RAGE)))
         SetPower(POWER_RAGE, GetMaxPower(POWER_RAGE));
     SetPower(POWER_FOCUS, GetMaxPower(POWER_FOCUS));
-    SetPower(POWER_HAPPINESS, 0);
     SetPower(POWER_RUNIC_POWER, 0);
 
     // update level to hunter/summon pet
