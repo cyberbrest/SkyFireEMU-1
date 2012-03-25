@@ -23,6 +23,7 @@
 #include "WorldSession.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
+#include "GuildMgr.h"
 #include "Log.h"
 #include "Opcodes.h"
 #include "Spell.h"
@@ -177,12 +178,6 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
     }
 }
 
-#define OPEN_CHEST 11437
-#define OPEN_SAFE 11535
-#define OPEN_CAGE 11792
-#define OPEN_BOOTY_CHEST 5107
-#define OPEN_STRONGBOX 8517
-
 void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
 {
     sLog->outDetail("WORLD: CMSG_OPEN_ITEM packet, data length = %i", (uint32)recvPacket.size());
@@ -317,7 +312,11 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
 {
     uint32 spellId, glyphIndex;
     uint8  castCount, castFlags;
-    recvPacket >> castCount >> spellId >> glyphIndex >> castFlags;
+
+    recvPacket >> castCount;
+    recvPacket >> spellId;
+    recvPacket >> glyphIndex;
+    recvPacket >> castFlags;
 
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: got cast spell packet, castCount: %u, spellId: %u, glyphIndex: %u, castFlags: %u, data length = %u", castCount, spellId, glyphIndex, castFlags, (uint32)recvPacket.size());
 
@@ -592,12 +591,17 @@ void WorldSession::HandleMirrorImageDataRequest(WorldPacket & recv_data)
     if (creator->GetTypeId() == TYPEID_PLAYER)
     {
         Player* player = creator->ToPlayer();
+        Guild* guild = NULL;
+
+        if (uint32 guildId = player->GetGuildId())
+            guild = sGuildMgr->GetGuildById(guildId);
+
         data << uint8(player->GetByteValue(PLAYER_BYTES, 0));   // skin
         data << uint8(player->GetByteValue(PLAYER_BYTES, 1));   // face
         data << uint8(player->GetByteValue(PLAYER_BYTES, 2));   // hair
         data << uint8(player->GetByteValue(PLAYER_BYTES, 3));   // haircolor
         data << uint8(player->GetByteValue(PLAYER_BYTES_2, 0)); // facialhair
-        data << uint32(player->GetGuildId());                   // unk
+        data << uint64(guild ? guild->GetGuid() : 0);
 
         static EquipmentSlots const itemSlots[] =
         {

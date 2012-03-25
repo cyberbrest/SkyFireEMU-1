@@ -671,6 +671,7 @@ public:
 
     // Getters
     uint32 GetId() const { return m_id; }
+	uint64 GetGuid() const { return MAKE_NEW_GUID(m_id, 0, HIGHGUID_GUILD); }
     uint64 GetLeaderGUID() const { return m_leaderGuid; }
     const std::string& GetName() const { return m_name; }
     const std::string& GetMOTD() const { return m_motd; }
