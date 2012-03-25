@@ -178,9 +178,7 @@ struct CreatureTemplate
 typedef UNORDERED_MAP<uint32, CreatureTemplate> CreatureTemplateContainer;
 
 // Represents max amount of expansions.
-// TODO: Add MAX_EXPANSION constant. hmmmz.bump~this needs scanned.
-#define MAX_CREATURE_BASE_HP 4
-#define MAX_EXPANSION 4
+#define MAX_CREATURE_BASE_HP MAX_EXPANSION - 1
 
 // Defines base stats for creatures (used to calculate HP/mana/armor).
 struct CreatureBaseStats

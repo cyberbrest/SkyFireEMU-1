@@ -21,7 +21,6 @@
 #define TRINITYCORE_CHATLINK_H
 
 #include "SharedDefines.h"
-#include "DBCStructure.h"
 #include <sstream>
 #include <list>
 
@@ -48,10 +47,9 @@ public:
     virtual bool Initialize(std::istringstream& iss) = 0;
     virtual bool ValidateName(char* buffer, const char* context) = 0;
 
-    void RemoveLink(std::string& msg) { msg.erase(_startPos, _endPos - _startPos); }
 protected:
     uint32 _color;
-    std::string m_name;
+    std::string _name;
     std::istringstream::pos_type _startPos;
     std::istringstream::pos_type _endPos;
 };
@@ -90,12 +88,12 @@ protected:
 class SpellChatLink : public ChatLink
 {
 public:
-    SpellChatLink() : ChatLink(), m_spell(NULL) { }
+    SpellChatLink() : ChatLink(), _spell(NULL) { }
     virtual bool Initialize(std::istringstream& iss);
     virtual bool ValidateName(char* buffer, const char* context);
 
 protected:
-    SpellInfo const* m_spell;
+    SpellInfo const* _spell;
 };
 
 // AchievementChatLink - link to quest
@@ -160,11 +158,9 @@ class LinkExtractor
 {
 public:
     explicit LinkExtractor(const char* msg);
-    explicit LinkExtractor(const std::string& msg);
     ~LinkExtractor();
 
     bool IsValidMessage();
-    std::string RemoveLinks() const;
 
 private:
     typedef std::list<ChatLink*> Links;
@@ -172,4 +168,5 @@ private:
     std::istringstream _iss;
 };
 
-#endif// TRINITYCORE_CHATLINK_H
+
+#endif // TRINITYCORE_CHATLINK_H
