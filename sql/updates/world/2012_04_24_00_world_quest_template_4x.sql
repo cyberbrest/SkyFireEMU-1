@@ -2,6 +2,7 @@
 ALTER TABLE `quest_template`
    CHANGE `entry` `Id` mediumint(8) UNSIGNED NOT NULL default '0',
    CHANGE `QuestLevel` `Level` smallint(3) NOT NULL DEFAULT '1',
+   CHANGE `RequiredSkill` `RequiredSkillId` smallint(5) UNSIGNED NOT NULL DEFAULT '0',
    CHANGE `RequiredSkillValue` `RequiredSkillPoints` smallint(5) UNSIGNED NOT NULL DEFAULT '0',
    CHANGE `RepObjectiveFaction` `RequiredFactionId1` smallint(5) UNSIGNED NOT NULL DEFAULT '0',
    CHANGE `RepObjectiveFaction2` `RequiredFactionId2` smallint(5) UNSIGNED NOT NULL DEFAULT '0',
