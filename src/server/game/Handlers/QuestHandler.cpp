@@ -204,7 +204,7 @@ void WorldSession::HandleQuestgiverAcceptQuestOpcode(WorldPacket & recv_data)
                     bool destroyItem = true;
                     for (int i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i)
                     {
-                        if ((quest_info->ReqItemId[i] == ((Item*)object)->GetEntry()) && (((Item*)object)->GetTemplate()->MaxCount > 0))
+                        if ((quest_info->RequiredItemId[i] == ((Item*)object)->GetEntry()) && (((Item*)object)->GetTemplate()->MaxCount > 0))
                         {
                             destroyItem = false;
                             break;

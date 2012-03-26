@@ -703,8 +703,8 @@ bool Battlefield::IncrementQuest(Player* player, uint32 quest, bool complete)
     {
         for (uint8 i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
         {
-            int32 creature = pQuest->ReqCreatureOrGOId[i];
-            if (uint32 spell_id = pQuest->ReqSpell[i])
+            int32 creature = pQuest->RequiredNpcOrGo[i];
+            if (uint32 spell_id = pQuest->RequiredSpellCast[i])
             {
                 player->CastedCreatureOrGO(creature, 0, spell_id);
                 return true;
