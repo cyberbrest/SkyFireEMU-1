@@ -508,6 +508,9 @@ private:
         uint32 GetRights() const { return m_rights; }
         void SetRights(uint32 rights);
 
+        bool operator < (const RankInfo& rank) const { return m_rights > rank.GetRights(); }
+        bool operator == (const RankInfo& rank) const { return m_rights == rank.GetRights(); }
+
         uint32 GetBankMoneyPerDay() const { return m_rankId == GR_GUILDMASTER ? GUILD_WITHDRAW_MONEY_UNLIMITED : m_bankMoneyPerDay; }
         void SetBankMoneyPerDay(uint32 money);
 

@@ -1480,13 +1480,13 @@ void Guild::SendGuildRankInfo(WorldSession* session)
 
 void Guild::HandleQuery(WorldSession* session)
 {
-    WorldPacket data(SMSG_GUILD_QUERY_RESPONSE, 8+2*15+10*15*2+10*4+10*4+200+4);      // Guess size
+    WorldPacket data(SMSG_GUILD_QUERY_RESPONSE, 8 * 32 + 200);      // Guess size
 
-    uint64 guid = MAKE_NEW_GUID(m_id, 0, HIGHGUID_GUILD);
-    data << uint64(guid);
+    data << uint64(GetGuid());
     data << m_name;
 
-    for (uint8 i = 0 ; i < GUILD_RANKS_MAX_COUNT; ++i)              // Always show 10 ranks
+    // Rank name
+    for (uint8 i = 0; i < GUILD_RANKS_MAX_COUNT; ++i)               // Always show 10 ranks
     {
         if (i < _GetRanksSize())
             data << m_ranks[i].GetName();
@@ -1494,6 +1494,7 @@ void Guild::HandleQuery(WorldSession* session)
             data << uint8(0);                                       // Empty string
     }
 
+    // Rank order of creation
     for (uint8 i = 0; i < GUILD_RANKS_MAX_COUNT; ++i)
     {
         if (i < _GetRanksSize())
@@ -1502,20 +1503,28 @@ void Guild::HandleQuery(WorldSession* session)
             data << uint32(0);
     }
 
+    // Rank order of "importance" (sorting by rights)
+    Ranks ranks = m_ranks;
+    std::sort(ranks.begin(), ranks.end());
+    Ranks::iterator it;
+
     for (uint8 i = 0; i < GUILD_RANKS_MAX_COUNT; ++i)
     {
         if (i < _GetRanksSize())
-            data << uint32(i);
+        {
+            it = std::find(ranks.begin(), ranks.end(), m_ranks[i]);
+            data << std::distance(ranks.begin(), it);
+        }
         else
             data << uint32(0);
     }
 
     m_emblemInfo.WritePacket(data);
-    data << uint32(_GetRanksSize());                                                // Something new in WotLK
+
+    data << uint32(_GetRanksSize());                                // Number of ranks used
 
     session->SendPacket(&data);
-    HandleRoster(session);
-    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_QUERY_RESPONSE)");
+    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (SMSG_GUILD_QUERY_RESPONSE)");
 }
 
 void Guild::HandleSetMOTD(WorldSession* session, const std::string& motd)
@@ -2103,7 +2112,6 @@ void Guild::SendPermissions(WorldSession* session) const
 {
     uint64 guid = session->GetPlayer()->GetGUID();
     uint8 rankId = session->GetPlayer()->GetRank();
-
     WorldPacket data(MSG_GUILD_PERMISSIONS, 4 * 15 + 1);
     data << uint32(rankId);
     data << uint32(_GetRankRights(rankId));
@@ -2114,7 +2122,6 @@ void Guild::SendPermissions(WorldSession* session) const
         data << uint32(_GetRankBankTabRights(rankId, tabId));
         data << uint32(_GetMemberRemainingSlots(guid, tabId));
     }
-
     session->SendPacket(&data);
     sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (MSG_GUILD_PERMISSIONS)");
 
