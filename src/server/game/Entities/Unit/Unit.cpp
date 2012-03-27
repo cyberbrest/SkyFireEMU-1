@@ -13919,18 +13919,66 @@ void Unit::SetMaxHealth(uint32 val)
         SetHealth(val);
 }
 
+uint32 Unit::GetPowerIndexByClass(uint32 powerId, uint32 classId) const
+{
+    ChrClassesEntry const* classEntry = sChrClassesStore.LookupEntry(classId);
+
+    ASSERT(classEntry && "Class not found");
+
+    uint32 index = 0;
+    for (uint32 i = 0; i <= sChrPowerTypesStore.GetNumRows(); ++i)
+    {
+        ChrPowerTypesEntry const* powerEntry = sChrPowerTypesStore.LookupEntry(i);
+        if (!powerEntry)
+            continue;
+
+        if (powerEntry->classId != classId)
+            continue;
+
+        if (powerEntry->power == powerId)
+            return index;
+
+        ++index;
+    }
+
+    // return invalid value - this class doesn't use this power
+    return MAX_POWERS;
+};
+
+int32 Unit::GetPower(Powers power) const
+{
+    uint32 powerIndex = GetPowerIndexByClass(power, getClass());
+    if (powerIndex == MAX_POWERS)
+        return 0;
+
+    return GetUInt32Value(UNIT_FIELD_POWER1 + powerIndex);
+}
+
+uint32 Unit::GetMaxPower(Powers power) const
+{
+    uint32 powerIndex = GetPowerIndexByClass(power, getClass());
+    if (powerIndex == MAX_POWERS)
+        return 0;
+
+    return GetUInt32Value(UNIT_FIELD_MAXPOWER1 + powerIndex);
+}
+
 void Unit::SetPower(Powers power, int32 val)
 {
-    int32 maxPower = GetMaxPower(power);
+    uint32 powerIndex = GetPowerIndexByClass(power, getClass());
+    if (powerIndex == MAX_POWERS)
+        return;
+
+    int32 maxPower = int32(GetMaxPower(power));
     if (maxPower < val)
         val = maxPower;
 
-    SetStatInt32Value(UNIT_FIELD_POWER1 + power, val);
+    SetStatInt32Value(UNIT_FIELD_POWER1 + powerIndex, val);
 
     WorldPacket data(SMSG_POWER_UPDATE);
     data.append(GetPackGUID());
-    data << int32(1);  // count of updates. uint8 and uint32 for each.
-    data << uint8(power);
+    data << uint32(1);//unk
+    data << uint8(powerIndex);
     data << int32(val);
     SendMessageToSet(&data, GetTypeId() == TYPEID_PLAYER ? true : false);
 
@@ -13953,8 +14001,12 @@ void Unit::SetPower(Powers power, int32 val)
 
 void Unit::SetMaxPower(Powers power, int32 val)
 {
+    uint32 powerIndex = GetPowerIndexByClass(power, getClass());
+    if (powerIndex == MAX_POWERS)
+        return;
+
     int32 cur_power = GetPower(power);
-    SetStatInt32Value(UNIT_FIELD_MAXPOWER1 + power, val);
+    SetStatInt32Value(UNIT_FIELD_MAXPOWER1 + powerIndex, val);
 
     // group update
     if (GetTypeId() == TYPEID_PLAYER)
@@ -13978,7 +14030,6 @@ void Unit::SetMaxPower(Powers power, int32 val)
 
 int32 Unit::GetCreatePowers(Powers power) const
 {
-    // POWER_FOCUS and POWER_HAPPINESS only have hunter pet
     switch (power)
     {
         case POWER_MANA:
@@ -13989,7 +14040,7 @@ int32 Unit::GetCreatePowers(Powers power) const
         case POWER_RAGE:
             return 1000;
         case POWER_FOCUS:
-            if (GetTypeId() == TYPEID_PLAYER && (ToPlayer()->getClass() == CLASS_HUNTER))
+            if (GetTypeId() == TYPEID_PLAYER && getClass() == CLASS_HUNTER)
                 return 100;
             return (GetTypeId() == TYPEID_PLAYER || !((Creature const*)this)->isPet() || ((Pet const*)this)->getPetType() != HUNTER_PET ? 0 : 100);
         case POWER_ENERGY:
@@ -13998,14 +14049,14 @@ int32 Unit::GetCreatePowers(Powers power) const
             return 1000;
         case POWER_RUNE:
             return 0;
+        case POWER_SOULSHARD:
+            return (GetTypeId() == TYPEID_PLAYER && getClass() == CLASS_WARLOCK ? 3 : 0);
+        case POWER_ECLIPSE:
+            return (GetTypeId() == TYPEID_PLAYER && getClass() == CLASS_DRUID ? 100 : 0); // Should be -100 to 100 this needs the power to be int32 instead of uint32
+        case POWER_HOLY_POWER:
+            return (GetTypeId() == TYPEID_PLAYER && getClass() == CLASS_PALADIN ? 3 : 0);
         case POWER_HEALTH:
             return 0;
-        case POWER_SOULSHARD:
-            return (GetTypeId() == TYPEID_PLAYER && ToPlayer()->getClass() == CLASS_WARLOCK ? 3 : 0);
-        case POWER_ECLIPSE:
-            return (GetTypeId() == TYPEID_PLAYER && ToPlayer()->getClass() == CLASS_DRUID ? 100 : 0); // Should be -100 to 100 this needs the power to be int32 instead of uint32
-        case POWER_HOLY_POWER:
-            return (GetTypeId() == TYPEID_PLAYER && ToPlayer()->getClass() == CLASS_PALADIN ? 3 : 0);
         default:
             break;
     }
