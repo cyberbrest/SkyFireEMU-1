@@ -170,6 +170,8 @@ class WorldSocket : protected WorldHandler
         /// Called by ProcessIncoming() on CMSG_PING.
         int HandlePing (WorldPacket& recvPacket);
 
+        /// Called by CMSG_VERIFY_CONNECTIVITY_RESPONSE
+        int HandleSendAuthSession();
     private:
         /// Time in which the last ping was received
         ACE_Time_Value m_LastPingTime;
