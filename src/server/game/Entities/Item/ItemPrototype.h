@@ -22,8 +22,6 @@
 
 #include "Common.h"
 #include "SharedDefines.h"
-#include "DB2Structure.h"
-#include "DBCStructure.h"
 
 enum ItemModType
 {
@@ -78,7 +76,7 @@ enum ItemModType
     ITEM_MOD_HOLY_RESISTANCE          = 53,
     ITEM_MOD_SHADOW_RESISTANCE        = 54,
     ITEM_MOD_NATURE_RESISTANCE        = 55,
-    ITEM_MOD_ARCANE_RESISTANCE        = 56
+    ITEM_MOD_ARCANE_RESISTANCE        = 56,
 };
 
 #define MAX_ITEM_MOD                    57
@@ -151,8 +149,11 @@ enum ItemProtoFlags
     ITEM_PROTO_FLAG_TRIGGERED_CAST              = 0x10000000, // Spell is cast with triggered flag
     ITEM_PROTO_FLAG_MILLABLE                    = 0x20000000, // Item can be milled
     ITEM_PROTO_FLAG_UNK11                       = 0x40000000, // ?
-    ITEM_PROTO_FLAG_UNK12                       = 0x80000000  // ?
+    ITEM_PROTO_FLAG_BOP_TRADEABLE               = 0x80000000  // bound item that can be traded
 };
+
+/* TODO
+*/
 
 enum ItemFieldFlags
 {
@@ -198,7 +199,8 @@ enum ItemFlagsExtra
     ITEM_FLAGS_EXTRA_ALLIANCE_ONLY           = 0x00000002,
     ITEM_FLAGS_EXTRA_EXT_COST_REQUIRES_GOLD  = 0x00000004, // when item uses extended cost, gold is also required
     ITEM_FLAGS_EXTRA_NEED_ROLL_DISABLED      = 0x00000100,
-    ITEM_FLAGS_EXTRA_CASTER_WEAPON           = 0x00000200 // uses caster specific dbc file for DPS calculations
+    ITEM_FLAGS_EXTRA_CASTER_WEAPON           = 0x00000200,
+    ITEM_FLAGS_EXTRA_BNET_ACCOUNT_BOUND      = 0x00020000,
 };
 
 enum BAG_FAMILY_MASK
@@ -278,14 +280,14 @@ enum ItemClass
     ITEM_CLASS_REAGENT                          = 5,
     ITEM_CLASS_PROJECTILE                       = 6,
     ITEM_CLASS_TRADE_GOODS                      = 7,
-    ITEM_CLASS_GENERIC                          = 8,
+    ITEM_CLASS_GENERIC                          = 8,  // OBSOLETE
     ITEM_CLASS_RECIPE                           = 9,
-    ITEM_CLASS_MONEY                            = 10,
+    ITEM_CLASS_MONEY                            = 10, // OBSOLETE
     ITEM_CLASS_QUIVER                           = 11,
     ITEM_CLASS_QUEST                            = 12,
     ITEM_CLASS_KEY                              = 13,
-    ITEM_CLASS_NOT_EXIST                        = 14,
-    ITEM_CLASS_MISC                             = 15,
+    ITEM_CLASS_PERMANENT                        = 14, // OBSOLETE
+    ITEM_CLASS_MISCELLANEOUS                    = 15,
     ITEM_CLASS_GLYPH                            = 16
 };
 
@@ -298,7 +300,7 @@ enum ItemSubclassConsumable
     ITEM_SUBCLASS_ELIXIR                        = 2,
     ITEM_SUBCLASS_FLASK                         = 3,
     ITEM_SUBCLASS_SCROLL                        = 4,
-    ITEM_SUBCLASS_FOOD                          = 5,
+    ITEM_SUBCLASS_FOOD_DRINK                    = 5,
     ITEM_SUBCLASS_ITEM_ENHANCEMENT              = 6,
     ITEM_SUBCLASS_BANDAGE                       = 7,
     ITEM_SUBCLASS_CONSUMABLE_OTHER              = 8
@@ -317,7 +319,7 @@ enum ItemSubclassContainer
     ITEM_SUBCLASS_MINING_CONTAINER              = 6,
     ITEM_SUBCLASS_LEATHERWORKING_CONTAINER      = 7,
     ITEM_SUBCLASS_INSCRIPTION_CONTAINER         = 8,
-    ITEM_SUBCLASS_FISHING_CONTAINER             = 9
+    ITEM_SUBCLASS_TACKLE_CONTAINER              = 9
 };
 
 #define MAX_ITEM_SUBCLASS_CONTAINER               10
@@ -364,25 +366,27 @@ enum ItemSubclassGem
     ITEM_SUBCLASS_GEM_META                      = 6,
     ITEM_SUBCLASS_GEM_SIMPLE                    = 7,
     ITEM_SUBCLASS_GEM_PRISMATIC                 = 8,
-    ITEM_SUBCLASS_GEM_COGWEEL                   = 10
+    ITEM_SUBCLASS_GEM_HYDRAULIC                 = 9,
+    ITEM_SUBCLASS_GEM_COGWHEEL                  = 10
 };
 
 #define MAX_ITEM_SUBCLASS_GEM                     11
 
 enum ItemSubclassArmor
 {
-    ITEM_SUBCLASS_ARMOR_MISC                    = 0,
+    ITEM_SUBCLASS_ARMOR_MISCELLANEOUS           = 0,
     ITEM_SUBCLASS_ARMOR_CLOTH                   = 1,
     ITEM_SUBCLASS_ARMOR_LEATHER                 = 2,
     ITEM_SUBCLASS_ARMOR_MAIL                    = 3,
     ITEM_SUBCLASS_ARMOR_PLATE                   = 4,
+    ITEM_SUBCLASS_ARMOR_BUCKLER_OLD             = 5, // OBSOLETE
     ITEM_SUBCLASS_ARMOR_SHIELD                  = 6,
     ITEM_SUBCLASS_ARMOR_LIBRAM                  = 7,
     ITEM_SUBCLASS_ARMOR_IDOL                    = 8,
     ITEM_SUBCLASS_ARMOR_TOTEM                   = 9,
     ITEM_SUBCLASS_ARMOR_SIGIL                   = 10,
     ITEM_SUBCLASS_ARMOR_RELIC                   = 11,
-    ITEM_SUBCLASS_ARMOR_BUCKLER                 = 12
+    ITEM_SUBCLASS_ARMOR_BUCKLER                 = 12,
 };
 
 #define MAX_ITEM_SUBCLASS_ARMOR                   13
@@ -396,11 +400,14 @@ enum ItemSubclassReagent
 
 enum ItemSubclassProjectile
 {
+    ITEM_SUBCLASS_WAND                          = 0, // OBSOLETE
+    ITEM_SUBCLASS_BOLT                          = 1, // OBSOLETE
     ITEM_SUBCLASS_ARROW                         = 2,
-    ITEM_SUBCLASS_BULLET                        = 3
+    ITEM_SUBCLASS_BULLET                        = 3,
+    ITEM_SUBCLASS_THROWN                        = 4  // OBSOLETE
 };
 
-#define MAX_ITEM_SUBCLASS_PROJECTILE              4
+#define MAX_ITEM_SUBCLASS_PROJECTILE              5
 
 enum ItemSubclassTradeGoods
 {
@@ -418,14 +425,15 @@ enum ItemSubclassTradeGoods
     ITEM_SUBCLASS_TRADE_GOODS_OTHER             = 11,
     ITEM_SUBCLASS_ENCHANTING                    = 12,
     ITEM_SUBCLASS_MATERIAL                      = 13,
-    ITEM_SUBCLASS_ARMOR_ENCHANTMENT             = 14
+    ITEM_SUBCLASS_ITEM_ENCHANTMENT              = 14,
+    ITEM_SUBCLASS_WEAPON_ENCHANTMENT            = 15  // OBSOLETE
 };
 
-#define MAX_ITEM_SUBCLASS_TRADE_GOODS             15
+#define MAX_ITEM_SUBCLASS_TRADE_GOODS             16
 
 enum ItemSubclassGeneric
 {
-    ITEM_SUBCLASS_GENERIC                       = 0
+    ITEM_SUBCLASS_GENERIC                       = 0  // OBSOLETE
 };
 
 #define MAX_ITEM_SUBCLASS_GENERIC                 1
@@ -450,14 +458,16 @@ enum ItemSubclassRecipe
 
 enum ItemSubclassMoney
 {
-    ITEM_SUBCLASS_MONEY                         = 0,
-    ITEM_SUBCLASS_MONEY_UNK7                    = 7 // 41749
+    ITEM_SUBCLASS_MONEY                         = 0,  // OBSOLETE
+    ITEM_SUBCLASS_MONEY_UNK7                    = 7   // 41749
 };
 
 #define MAX_ITEM_SUBCLASS_MONEY                   8
 
 enum ItemSubclassQuiver
 {
+    ITEM_SUBCLASS_QUIVER0                       = 0, // OBSOLETE
+    ITEM_SUBCLASS_QUIVER1                       = 1, // OBSOLETE
     ITEM_SUBCLASS_QUIVER                        = 2,
     ITEM_SUBCLASS_AMMO_POUCH                    = 3
 };
@@ -482,12 +492,12 @@ enum ItemSubclassKey
 
 #define MAX_ITEM_SUBCLASS_KEY                     2
 
-enum ItemSubclassNotExist
+enum ItemSubclassPermanent
 {
-    ITEM_SUBCLASS_NOT_EXIST                     = 0
+    ITEM_SUBCLASS_PERMANENT                     = 0
 };
 
-#define MAX_ITEM_SUBCLASS_NOT_EXIST               1
+#define MAX_ITEM_SUBCLASS_PERMANENT               1
 
 enum ItemSubclassJunk
 {
@@ -534,7 +544,7 @@ const uint32 MaxItemSubclassValues[MAX_ITEM_CLASS] =
     MAX_ITEM_SUBCLASS_QUIVER,
     MAX_ITEM_SUBCLASS_QUEST,
     MAX_ITEM_SUBCLASS_KEY,
-    MAX_ITEM_SUBCLASS_NOT_EXIST,
+    MAX_ITEM_SUBCLASS_PERMANENT,
     MAX_ITEM_SUBCLASS_JUNK,
     MAX_ITEM_SUBCLASS_GLYPH
 };
@@ -579,6 +589,11 @@ struct _Socket
     uint32 Color;
     uint32 Content;
 };
+
+#define MAX_ITEM_PROTO_DAMAGES 2                            // changed in 3.1.0
+#define MAX_ITEM_PROTO_SOCKETS 3
+#define MAX_ITEM_PROTO_SPELLS  5
+#define MAX_ITEM_PROTO_STATS  10
 
 struct ItemTemplate
 {
@@ -706,7 +721,8 @@ struct ItemTemplate
     }
 
     bool IsPotion() const { return Class == ITEM_CLASS_CONSUMABLE && SubClass == ITEM_SUBCLASS_POTION; }
-    bool IsArmorVellum() const { return Class == ITEM_CLASS_TRADE_GOODS && SubClass == ITEM_SUBCLASS_ARMOR_ENCHANTMENT; }
+    bool IsWeaponVellum() const { return Class == ITEM_CLASS_TRADE_GOODS && SubClass == ITEM_SUBCLASS_WEAPON_ENCHANTMENT; }
+    bool IsArmorVellum() const { return Class == ITEM_CLASS_TRADE_GOODS && SubClass == ITEM_SUBCLASS_ITEM_ENCHANTMENT; }
     bool IsConjuredConsumable() const { return Class == ITEM_CLASS_CONSUMABLE && (Flags & ITEM_PROTO_FLAG_CONJURED); }
 };
 
