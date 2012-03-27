@@ -406,7 +406,7 @@ enum AuraType
     SPELL_AURA_MOD_TIME_BETWEEN_ATTACKS            = 342,    // Increases the time between attacks of the target
     SPELL_AURA_343                                 = 343,    // Increases damage taken, only 1 rogue spell
     SPELL_AURA_MOD_AUTOATTACK_DAMAGE               = 344,    // Increases damage done (white damage)
-    SPELL_AURA_MOD_ARMOR_EFFECTIVENESS_FOR_CASTER  = 345,    // Allows caster to bypass (GetAmount())% of the targets armor
+    SPELL_AURA_BYPASS_ARMOR_FOR_CASTER             = 345,    // Allows caster to bypass (GetAmount())% of the targets armor
     SPELL_AURA_PROGRESS_BAR                        = 346,    // NYI
     SPELL_AURA_MOD_SPELL_COOLDOWN_BY_HASTE         = 347,    // NYI
     SPELL_AURA_DEPOSIT_BONUS_MONEY_IN_GUILD_BANK_ON_LOOT = 348, // guild perk, Each time you loot money from an enemy, an extra (Getbasepoints())% money is generated and deposited directly into your guild bank.

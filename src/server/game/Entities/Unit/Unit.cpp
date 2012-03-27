@@ -1411,7 +1411,7 @@ void Unit::DealMeleeDamage(CalcDamageInfo *damageInfo, bool durabilityLoss)
             victim->DealDamageMods(this, damage, NULL);
 
             // TODO: Move this to a packet handler
-            WorldPacket data(SMSG_SPELLDAMAGESHIELD, (8+8+4+4+4+4)); // 406a
+            WorldPacket data(SMSG_SPELLDAMAGESHIELD, 8 + 8 + 4 + 4 + 4 + 4 + 4);
             data << uint64(victim->GetGUID());
             data << uint64(GetGUID());
             data << uint32(i_spellProto->Id);
@@ -1419,7 +1419,7 @@ void Unit::DealMeleeDamage(CalcDamageInfo *damageInfo, bool durabilityLoss)
             int32 overkill = int32(damage) - int32(GetHealth());
             data << uint32(overkill > 0 ? overkill : 0);          // Overkill
             data << uint32(i_spellProto->SchoolMask);
-            data << uint32(0);                                    // 4.0.6
+            data << uint32(0); // Unknown 4.x
             victim->SendMessageToSet(&data, true);
 
             victim->DealDamage(this, damage, 0, SPELL_DIRECT_DAMAGE, i_spellProto->GetSchoolMask(), i_spellProto, true);
@@ -1463,13 +1463,13 @@ uint32 Unit::CalcArmorReducedDamage(Unit* victim, const uint32 damage, SpellInfo
     uint32 newdamage = 0;
     float armor = float(victim->GetArmor());
 
-    // decrease enemy armor effectiveness by SPELL_AURA_MOD_ARMOR_EFFECTIVENESS_FOR_CASTER
-    int32 auraEffectivenessReduction = 0;
-    AuraEffectList const & reductionAuras = victim->GetAuraEffectsByType(SPELL_AURA_MOD_ARMOR_EFFECTIVENESS_FOR_CASTER);
+    // bypass enemy armor by SPELL_AURA_BYPASS_ARMOR_FOR_CASTER
+    int32 armorBypassPct = 0;
+    AuraEffectList const & reductionAuras = victim->GetAuraEffectsByType(SPELL_AURA_BYPASS_ARMOR_FOR_CASTER);
     for (AuraEffectList::const_iterator i = reductionAuras.begin(); i != reductionAuras.end(); ++i)
         if ((*i)->GetCasterGUID() == GetGUID())
-            auraEffectivenessReduction += (*i)->GetAmount();
-    armor = CalculatePctN(armor, 100 - std::min(auraEffectivenessReduction, 100));
+            armorBypassPct += (*i)->GetAmount();
+    armor = CalculatePctN(armor, 100 - std::min(armorBypassPct, 100));
 
     // Ignore enemy armor by SPELL_AURA_MOD_TARGET_RESISTANCE aura
     armor += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_TARGET_RESISTANCE, SPELL_SCHOOL_MASK_NORMAL);
@@ -11030,6 +11030,11 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
     if (Player* modOwner = GetSpellModOwner())
         modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_CRITICAL_CHANCE, crit_chance, NULL, victim);
 
+    AuraEffectList const& critAuras = victim->GetAuraEffectsByType(SPELL_AURA_MOD_CRIT_CHANCE_FOR_CASTER);
+    for (AuraEffectList::const_iterator i = critAuras.begin(); i != critAuras.end(); ++i)
+        if ((*i)->GetCasterGUID() == GetGUID() && (*i)->IsAffectingSpell(spellProto))
+            crit_chance += (*i)->GetAmount();
+
     crit_chance = crit_chance > 0.0f ? crit_chance : 0.0f;
     if (roll_chance_f(crit_chance))
         return true;
@@ -11634,6 +11639,22 @@ void Unit::MeleeDamageBonus(Unit* victim, uint32 *pdamage, WeaponAttackType attT
     float TakenTotalMod = 1.0f;
 
     // ..done
+    // SPELL_AURA_MOD_AUTOATTACK_DAMAGE
+    if (!spellProto)
+    {
+        AuraEffectList const & autoattackDamage = GetAuraEffectsByType(SPELL_AURA_MOD_AUTOATTACK_DAMAGE);
+        for (AuraEffectList::const_iterator i = autoattackDamage.begin(); i != autoattackDamage.end(); ++i)
+        {
+            int32 amount = (*i)->GetAmount();
+            if ((*i)->GetSpellInfo()->EquippedItemClass == -1)
+                AddPctN(DoneTotalMod, amount);
+            else if (!((*i)->GetSpellInfo()->AttributesEx5 & SPELL_ATTR5_SPECIAL_ITEM_CLASS_CHECK) && ((*i)->GetSpellInfo()->EquippedItemSubClassMask == 0))
+                AddPctN(DoneTotalMod, amount);
+            else if (ToPlayer() && ToPlayer()->HasItemFitToSpellRequirements((*i)->GetSpellInfo()))
+                AddPctN(DoneTotalMod, amount);
+        }
+    }
+
     AuraEffectList const& mModDamagePercentDone = GetAuraEffectsByType(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE);
     for (AuraEffectList::const_iterator i = mModDamagePercentDone.begin(); i != mModDamagePercentDone.end(); ++i)
     {
@@ -11948,6 +11969,64 @@ void Unit::Dismount()
         else
             player->ResummonPetTemporaryUnSummonedIfAny();
     }
+}
+
+MountCapabilityEntry const* Unit::GetMountCapability(uint32 mountType) const
+{
+    if (!mountType)
+        return NULL;
+
+    MountTypeEntry const* mountTypeEntry = sMountTypeStore.LookupEntry(mountType);
+    if (!mountTypeEntry)
+        return NULL;
+
+    uint32 zoneId, areaId;
+    GetZoneAndAreaId(zoneId, areaId);
+    uint32 ridingSkill = 5000;
+    if (GetTypeId() == TYPEID_PLAYER)
+        ridingSkill = ToPlayer()->GetSkillValue(SKILL_RIDING);
+
+    for (uint32 i = MAX_MOUNT_CAPABILITIES; i > 0; --i)
+    {
+        MountCapabilityEntry const* mountCapability = sMountCapabilityStore.LookupEntry(mountTypeEntry->MountCapability[i - 1]);
+        if (!mountCapability)
+            continue;
+
+        if (ridingSkill < mountCapability->RequiredRidingSkill)
+            continue;
+
+        if (HasExtraUnitMovementFlag(MOVEMENTFLAG2_FULL_SPEED_PITCHING))
+        {
+            if (!(mountCapability->Flags & MOUNT_FLAG_CAN_PITCH))
+                continue;
+        }
+        else if (HasUnitMovementFlag(MOVEMENTFLAG_SWIMMING))
+        {
+            if (!(mountCapability->Flags & MOUNT_FLAG_CAN_SWIM))
+                continue;
+        }
+        else if (!(mountCapability->Flags & 0x1))   // unknown flags, checked in 4.2.2 14545 client
+        {
+            if (!(mountCapability->Flags & 0x2))
+                continue;
+        }
+
+        if (mountCapability->RequiredMap != -1 && GetMapId() != mountCapability->RequiredMap)
+            continue;
+
+        if (mountCapability->RequiredArea && (mountCapability->RequiredArea != zoneId && mountCapability->RequiredArea != areaId))
+            continue;
+
+        if (mountCapability->RequiredAura && !HasAura(mountCapability->RequiredAura))
+            continue;
+
+        if (mountCapability->RequiredSpell && (GetTypeId() != TYPEID_PLAYER || !ToPlayer()->HasSpell(mountCapability->RequiredSpell)))
+            continue;
+
+        return mountCapability;
+    }
+
+    return NULL;
 }
 
 void Unit::SetInCombatWith(Unit* enemy)
@@ -16894,13 +16973,33 @@ void Unit::KnockbackFrom(float x, float y, float speedXY, float speedZ)
         float vcos, vsin;
         GetSinCos(x, y, vsin, vcos);
 
-        WorldPacket data(SMSG_MOVE_KNOCK_BACK, (8+4+4+4+4+4));
-        data.append(GetPackGUID());
-        data << uint32(0);                                      // counter
-        data << float(vcos);                                    // x direction
-        data << float(vsin);                                    // y direction
-        data << float(speedXY);                                 // Horizontal speed
-        data << float(-speedZ);                                 // Z Movement speed (vertical)
+        WorldPacket data(SMSG_MOVE_KNOCK_BACK, (1+8+4+4+4+4+4));
+        uint64 guid = GetGUID();
+        uint8* bytes = (uint8*)&guid;
+
+        data.WriteByteMask(bytes[5]);
+        data.WriteByteMask(bytes[2]);
+        data.WriteByteMask(bytes[6]);
+        data.WriteByteMask(bytes[3]);
+        data.WriteByteMask(bytes[1]);
+        data.WriteByteMask(bytes[4]);
+        data.WriteByteMask(bytes[0]);
+        data.WriteByteMask(bytes[7]);
+
+        data.WriteByteSeq(bytes[0]);
+        data << float(speedXY);
+        data << uint32(0);
+        data << float(-speedZ);
+        data.WriteByteSeq(bytes[6]);
+        data << float(vcos);
+        data << float(vsin);
+        data.WriteByteSeq(bytes[3]);
+        data.WriteByteSeq(bytes[1]);
+        data.WriteByteSeq(bytes[2]);
+        data.WriteByteSeq(bytes[4]);
+        data.WriteByteSeq(bytes[7]);
+        data.WriteByteSeq(bytes[5]);
+        data.WriteByteSeq(bytes[5]);
 
         player->GetSession()->SendPacket(&data);
     }
@@ -17386,13 +17485,32 @@ void Unit::JumpTo(float speedXY, float speedZ, bool forward)
         float vcos = cos(angle+GetOrientation());
         float vsin = sin(angle+GetOrientation());
 
-        WorldPacket data(SMSG_MOVE_KNOCK_BACK, (8+4+4+4+4+4));
-        data.append(GetPackGUID());
-        data << uint32(0);                                      // Sequence
-        data << float(vcos);                                    // x direction
-        data << float(vsin);                                    // y direction
-        data << float(speedXY);                                 // Horizontal speed
-        data << float(-speedZ);                                 // Z Movement speed (vertical)
+        WorldPacket data(SMSG_MOVE_KNOCK_BACK, (1+8+4+4+4+4+4));
+        uint64 guid = GetGUID();
+        uint8* bytes = (uint8*)&guid;
+
+        data.WriteByteMask(bytes[5]);
+        data.WriteByteMask(bytes[2]);
+        data.WriteByteMask(bytes[6]);
+        data.WriteByteMask(bytes[3]);
+        data.WriteByteMask(bytes[1]);
+        data.WriteByteMask(bytes[4]);
+        data.WriteByteMask(bytes[0]);
+        data.WriteByteMask(bytes[7]);
+
+        data.WriteByteSeq(bytes[0]);
+        data << float(speedXY);
+        data << uint32(0);
+        data << float(-speedZ);
+        data.WriteByteSeq(bytes[6]);
+        data << float(vcos);
+        data << float(vsin);
+        data.WriteByteSeq(bytes[3]);
+        data.WriteByteSeq(bytes[1]);
+        data.WriteByteSeq(bytes[2]);
+        data.WriteByteSeq(bytes[4]);
+        data.WriteByteSeq(bytes[7]);
+        data.WriteByteSeq(bytes[5]);
 
         ToPlayer()->GetSession()->SendPacket(&data);
     }
