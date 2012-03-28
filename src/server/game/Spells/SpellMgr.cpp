@@ -2889,7 +2889,7 @@ void SpellMgr::LoadSpellCustomAttr()
                 case SPELL_AURA_PERIODIC_ENERGIZE:
                 case SPELL_AURA_OBS_MOD_HEALTH:
                 case SPELL_AURA_OBS_MOD_POWER:
-                case SPELL_AURA_POWER_BURN_MANA:
+                case SPELL_AURA_POWER_BURN:
                     spellInfo->AttributesCu |= SPELL_ATTR0_CU_NO_INITIAL_THREAT;
                     break;
             }
@@ -3158,7 +3158,7 @@ void SpellMgr::LoadSpellCustomAttr()
                 break;
             case 84726: // Frostfire orb rank 1
             case 84727: // Frostfire orb rank 2
-                spellInfo->Effects[1].ApplyAuraName = SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_2;
+                spellInfo->Effects[1].ApplyAuraName = SPELL_AURA_MOD_TRAP_LAUNCHER;
                 spellInfo->Effects[1].BasePoints = 92283;
                 break;
             case 44544: // Fingers of Frost
@@ -3303,12 +3303,12 @@ void SpellMgr::LoadSpellCustomAttr()
                 break;
             case 81585: // Chakra: Serenity replace
                 spellInfo->Effects[0].Effect = SPELL_EFFECT_APPLY_AURA;
-                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_1;
+                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_SWAP_SPELLS;
                 spellInfo->Effects[0].BasePoints = 88684;
                 break;
             case 81207: // Chakra: Sanctuary replace
                 spellInfo->Effects[0].Effect = SPELL_EFFECT_APPLY_AURA;
-                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_1;
+                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_SWAP_SPELLS;
                 spellInfo->Effects[0].BasePoints = 88685;
                 break;
             case 68659: // Launch
@@ -3316,7 +3316,7 @@ void SpellMgr::LoadSpellCustomAttr()
                 break;
             case 94338: // Sunfire (Eclipse)
                 spellInfo->Effects[0].Effect = SPELL_EFFECT_APPLY_AURA;
-                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_1;
+                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_SWAP_SPELLS;
                 spellInfo->Effects[0].BasePoints = 93402;
                 break;
             case 70728: // Exploit Weakness (needs target selection script)

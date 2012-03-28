@@ -148,6 +148,15 @@ void AuraApplication::_InitFlags(Unit* caster, uint8 effMask)
         }
         _flags |= positiveFound ? AFLAG_POSITIVE : AFLAG_NEGATIVE;
     }
+    // there are more auras that require this flag, this is just the beginning
+    for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+    {
+        if (((1 << i) & effMask) && GetBase()->GetSpellInfo()->Effects[i].ApplyAuraName == SPELL_AURA_MOUNTED)
+        {
+            _flags |= AFLAG_ANY_EFFECT_AMOUNT_SENT;
+            break;
+        }
+    }
 }
 
 void AuraApplication::_HandleEffect(uint8 effIndex, bool apply)
@@ -193,9 +202,9 @@ void AuraApplication::BuildUpdatePacket(ByteBuffer& data, bool remove) const
     uint32 flags = _flags;
     if (aura->GetMaxDuration() > 0 && !(aura->GetSpellInfo()->AttributesEx5 & SPELL_ATTR5_HIDE_DURATION))
         flags |= AFLAG_DURATION;
-    if (!aura->IsPassive())
+    if (aura->IsPassive())
         flags |= AFLAG_ANY_EFFECT_AMOUNT_SENT;
-    data << uint8(flags);
+    data << uint16(flags);
     data << uint8(aura->GetCasterLevel());
     // send stack amount for aura which could be stacked (never 0 - causes incorrect display) or charges
     // stack amount has priority over charges (checked on retail with spell 50262)
@@ -211,14 +220,11 @@ void AuraApplication::BuildUpdatePacket(ByteBuffer& data, bool remove) const
     }
 
     if (flags & AFLAG_ANY_EFFECT_AMOUNT_SENT)
-    {
-        for (uint8 i=0; i<MAX_SPELL_EFFECTS; ++i)
-        {
-            if (flags & 1<<i)
-                data << uint32(aura->GetEffect(i)->GetAmount());
-        }
-    }
+        for (uint32 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+            if (AuraEffect const* eff = aura->GetEffect(i)) // NULL if effect flag not set
+                data << int32(eff->GetAmount());
 }
+
 
 void AuraApplication::ClientUpdate(bool remove)
 {
@@ -702,7 +708,7 @@ void Aura::Update(uint32 diff, Unit* caster)
             {
                 if (m_spellInfo->ManaPerSecond > 0)
                 {
-                    if (int32 manaPerSecond = m_spellInfo->ManaPerSecond * caster->getLevel())
+                    if (int32 manaPerSecond = m_spellInfo->ManaPerSecond * caster->getLevel()) //really we should *lvl????
                     {
                         m_timeCla += 1000 - diff;
 
@@ -1947,7 +1953,7 @@ bool Aura::CanStackWith(Aura const* existingAura) const
                 case SPELL_AURA_PERIODIC_ENERGIZE:
                 case SPELL_AURA_PERIODIC_MANA_LEECH:
                 case SPELL_AURA_PERIODIC_LEECH:
-                case SPELL_AURA_POWER_BURN_MANA:
+                case SPELL_AURA_POWER_BURN:
                 case SPELL_AURA_OBS_MOD_POWER:
                 case SPELL_AURA_OBS_MOD_HEALTH:
                 case SPELL_AURA_PERIODIC_TRIGGER_SPELL_WITH_VALUE:

@@ -2089,20 +2089,87 @@ uint8 Player::GetChatTag() const
 
 void Player::SendTeleportPacket(Position &oldPos)
 {
-    WorldPacket data2(SMSG_MOVE_TELEPORT, 38);
-    data2.append(GetPackGUID());
-    BuildMovementPacket(&data2);
+    WorldPacket data(SMSG_MOVE_TELEPORT, 38);
+
+    uint64 guid = GetGUID();
+    uint8* bytes = (uint8*)&guid;
+
+    data.WriteBit(GetTransGUID());
+    data.WriteBit(bytes[0]);
+    data.WriteBit(bytes[2]);
+    data.WriteBit(bytes[6]);
+    data.WriteBit(bytes[7]);
+    data.WriteBit(bytes[4]);
+    data.WriteBit(bytes[5]);
+    data.WriteBit(bytes[3]);
+    data.WriteBit(bytes[1]);
+    data.WriteBit(0); //unk byte's bit
+    data << GetPositionX();
+    data << GetPositionY();
+    data << GetPositionZ();
+    data.WriteByteSeq(bytes[5]);
+    data.WriteByteSeq(bytes[4]);
+    if (GetTransGUID()) data << GetTransGUID();
+    data.WriteByteSeq(bytes[2]);
+    data.WriteByteSeq(bytes[7]);
+    data << uint32(0); //unk int
+    data.WriteByteSeq(bytes[1]);
+    data.WriteByteSeq(bytes[0]);
+    data.WriteByteSeq(bytes[6]);
+    data.WriteByteSeq(bytes[3]);
+    // unk byte, only if bit is set
+    data << GetOrientation();
+
     Relocate(&oldPos);
-    SendMessageToSet(&data2, false);
+    SendDirectMessage(&data);
 }
 
-void Player::SendTeleportAckPacket()
+void Player::SendSetFlyPacket(bool apply)
 {
-    WorldPacket data(CMSG_MOVE_TELEPORT_ACK, 41);
-    data.append(GetPackGUID());
-    data << uint32(0);                                     // this value increments every time
-    BuildMovementPacket(&data);
-    GetSession()->SendPacket(&data);
+    WorldPacket data(apply ? SMSG_MOVE_SET_CAN_FLY : SMSG_MOVE_UNSET_CAN_FLY, 12);
+    uint64 guid = GetGUID();
+    uint8* bytes = (uint8*)&guid;
+    if (apply)
+    {
+        data.WriteBit(bytes[4]);
+        data.WriteBit(bytes[3]);
+        data.WriteBit(bytes[6]);
+        data.WriteBit(bytes[0]);
+        data.WriteBit(bytes[1]);
+        data.WriteBit(bytes[2]);
+        data.WriteBit(bytes[7]);
+        data.WriteBit(bytes[5]);
+        data.WriteByteSeq(bytes[3]);
+        data.WriteByteSeq(bytes[7]);
+        data.WriteByteSeq(bytes[5]);
+        data.WriteByteSeq(bytes[0]);
+        data.WriteByteSeq(bytes[1]);
+        data.WriteByteSeq(bytes[4]);
+        data << uint32(sWorld->GetGameTime());
+        data.WriteByteSeq(bytes[6]);
+        data.WriteByteSeq(bytes[2]);
+    }
+    else
+    {
+        data.WriteBit(bytes[1]);
+        data.WriteBit(bytes[6]);
+        data.WriteBit(bytes[0]);
+        data.WriteBit(bytes[2]);
+        data.WriteBit(bytes[4]);
+        data.WriteBit(bytes[5]);
+        data.WriteBit(bytes[7]);
+        data.WriteBit(bytes[3]);
+        data.WriteByteSeq(bytes[7]);
+        data.WriteByteSeq(bytes[6]);
+        data.WriteByteSeq(bytes[5]);
+        data.WriteByteSeq(bytes[0]);
+        data << uint32(sWorld->GetGameTime());
+        data.WriteByteSeq(bytes[3]);
+        data.WriteByteSeq(bytes[1]);
+        data.WriteByteSeq(bytes[2]);
+        data.WriteByteSeq(bytes[4]);
+    }
+    SendDirectMessage(&data);
 }
 
 bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options)
@@ -2209,15 +2276,14 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         SetFallInformation(0, z);
 
         // code for finish transfer called in WorldSession::HandleMovementOpcodes()
-        // at client packet MSG_MOVE_TELEPORT_ACK
+        // at client packet CMSG_MOVE_TELEPORT_ACK
         SetSemaphoreTeleportNear(true);
-        // near teleport, triggering send MSG_MOVE_TELEPORT_ACK from client at landing
+        // near teleport, triggering send CMSG_MOVE_TELEPORT_ACK from client at landing
         if (!GetSession()->PlayerLogout())
         {
             Position oldPos;
             GetPosition(&oldPos);
             Relocate(x, y, z, orientation);
-            SendTeleportAckPacket();
             SendTeleportPacket(oldPos); // this automatically relocates to oldPos in order to broadcast the packet in the right place
         }
     }
@@ -2334,11 +2400,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             if (!GetSession()->PlayerLogout())
             {
                 WorldPacket data(SMSG_NEW_WORLD, 4 + 4 + 4 + 4 + 4);
-                data << uint32(mapid);
                 if (_transport)
-                    data << _movementInfo.t_pos.PositionXYZOStream();
+                    data << _movementInfo.t_pos.PositionXYZStream();
                 else
-                    data << _teleport_dest.PositionXYZOStream();
+                    data << _teleport_dest.PositionXYZStream();
+
+                data << uint32(mapid);
 
                 GetSession()->SendPacket(&data);
                 SendSavedInstances();
@@ -5396,7 +5463,7 @@ void Player::DurabilityLoss(Item* item, double percent)
     if (!pMaxDurability)
         return;
 
-    percent /= GetTotalAuraMultiplier(SPELL_AURA_REDUCE_DURABILITY_LOSS);
+    percent /= GetTotalAuraMultiplier(SPELL_AURA_MOD_DURABILITY_LOSS);
 
     uint32 pDurabilityLoss = uint32(pMaxDurability*percent);
 
