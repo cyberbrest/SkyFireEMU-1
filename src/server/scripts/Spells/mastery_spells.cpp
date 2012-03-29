@@ -20,7 +20,7 @@
 #include "SpellAuraEffects.h"
 #include "SpellAuras.h"
 
-class player_scripts_spec : public PlayerScript
+/*class player_scripts_spec : public PlayerScript
 {
 public:
     player_scripts_spec() : PlayerScript("player_scripts_spec") { }
@@ -63,7 +63,7 @@ public:
 
         player->RecalculateMasteryAuraEffects(player->GetTalentBranchSpec(player->GetActiveSpec()));
     }
-};
+};*/
 
 // 76838 Strikes of Opportunity
 class spell_war_strikes_of_opportunity : public SpellScriptLoader
@@ -490,7 +490,7 @@ public:
 
 void AddSC_mastery_spells()
 {
-    new player_scripts_spec;
+    //new player_scripts_spec;
 
     // Warrior masteries
     new spell_war_strikes_of_opportunity;
