@@ -869,8 +869,8 @@ enum Opcodes
     CMSG_ARENA_TEAM_LEADER                           = 0x00,
     SMSG_ARENA_TEAM_EVENT                            = 0x00,
     CMSG_BATTLEMASTER_JOIN_ARENA                     = 0x00,
-    MSG_MOVE_START_ASCEND                            = 0x00,
-    MSG_MOVE_STOP_ASCEND                             = 0x00,
+    MSG_MOVE_START_ASCEND                            = 0x7683,
+    MSG_MOVE_STOP_ASCEND                             = 0x20B1,
     SMSG_ARENA_TEAM_STATS                            = 0x00,
     CMSG_LFG_JOIN                                    = 0x00154,  // 4.3.0 15050
     CMSG_LFG_LEAVE                                   = 0x04306,  // 4.3.0 15050
@@ -950,7 +950,7 @@ enum Opcodes
     SMSG_SET_EXTRA_AURA_INFO_OBSOLETE                = 0x00,
     SMSG_SET_EXTRA_AURA_INFO_NEED_UPDATE_OBSOLETE    = 0x00,
     SMSG_CLEAR_EXTRA_AURA_INFO_OBSOLETE              = 0x00,
-    MSG_MOVE_START_DESCEND                           = 0x00,
+    MSG_MOVE_START_DESCEND                           = 0x3013,
     CMSG_IGNORE_REQUIREMENTS_CHEAT                   = 0x00,
     SMSG_IGNORE_REQUIREMENTS_CHEAT                   = 0x00,
     SMSG_SPELL_CHANCE_PROC_LOG                       = 0x00,
@@ -1162,10 +1162,10 @@ enum Opcodes
     SMSG_PET_RENAMEABLE                              = 0x00,
     CMSG_REQUEST_VEHICLE_EXIT                        = 0x00,
     CMSG_REQUEST_PLAYER_VEHICLE_EXIT                 = 0x00,
-    CMSG_REQUEST_VEHICLE_PREV_SEAT                   = 0x00,
-    CMSG_REQUEST_VEHICLE_NEXT_SEAT                   = 0x00,
-    CMSG_REQUEST_VEHICLE_SWITCH_SEAT                 = 0x00,
-    CMSG_PET_LEARN_TALENT                            = 0x00,
+    CMSG_REQUEST_VEHICLE_PREV_SEAT                   = 0x4084,
+    CMSG_REQUEST_VEHICLE_NEXT_SEAT                   = 0x606,
+    CMSG_REQUEST_VEHICLE_SWITCH_SEAT                 = 0x4486,
+    CMSG_PET_LEARN_TALENT                            = 0x2224,
     CMSG_PET_UNLEARN_TALENTS                         = 0x00,
     SMSG_SET_PHASE_SHIFT                             = 0x04428, // 4.3.0 15050
     SMSG_ALL_ACHIEVEMENT_DATA                        = 0x0069A, // 4.3.0 15050

@@ -12673,10 +12673,10 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
         switch (mtype)
         {
             case MOVE_WALK:
-                data.Initialize(SMSG_MOVE_SPLINE_SET_WALK_SPEED, 8+4+2+4+4+4+4+4+4+4);
+                data.Initialize(MSG_MOVE_SET_WALK_SPEED, 8+4+2+4+4+4+4+4+4+4);
                 break;
             case MOVE_RUN:
-                data.Initialize(SMSG_MOVE_SPLINE_SET_RUN_SPEED, 1 + 8 + 4);
+                data.Initialize(MSG_MOVE_SET_RUN_SPEED, 1 + 8 + 4);
                 data.WriteByteMask(bytes[7]);
                 data.WriteByteMask(bytes[2]);
                 data.WriteByteMask(bytes[1]);
@@ -12698,7 +12698,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data << float(GetSpeed(mtype));
                 break;
             case MOVE_RUN_BACK:
-                data.Initialize(SMSG_MOVE_SPLINE_SET_RUN_BACK_SPEED, 1 + 8 + 4);
+                data.Initialize(MSG_MOVE_SET_RUN_BACK_SPEED, 1 + 8 + 4);
                 data.WriteByteMask(bytes[4]);
                 data.WriteByteMask(bytes[0]);
                 data.WriteByteMask(bytes[6]);
@@ -12720,7 +12720,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data << float(GetSpeed(mtype));
                 break;
             case MOVE_SWIM:
-                data.Initialize(SMSG_MOVE_SPLINE_SET_SWIM_SPEED, 1 + 8 + 4);
+                data.Initialize(MSG_MOVE_SET_SWIM_SPEED, 1 + 8 + 4);
                 data.WriteByteMask(bytes[3]);
                 data.WriteByteMask(bytes[5]);
                 data.WriteByteMask(bytes[7]);
@@ -12741,7 +12741,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[5]);
                 break;
             case MOVE_SWIM_BACK:
-                data.Initialize(SMSG_MOVE_SPLINE_SET_SWIM_BACK_SPEED, 1 + 8 + 4);
+                data.Initialize(MSG_MOVE_SET_SWIM_BACK_SPEED, 1 + 8 + 4);
                 data.WriteByteMask(bytes[3]);
                 data.WriteByteMask(bytes[5]);
                 data.WriteByteMask(bytes[4]);
@@ -12762,7 +12762,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[5]);
                 break;
             case MOVE_TURN_RATE:
-                data.Initialize(SMSG_MOVE_SPLINE_SET_TURN_RATE, 1 + 8 + 4);
+                data.Initialize(MSG_MOVE_SET_TURN_RATE, 1 + 8 + 4);
                 data.WriteByteMask(bytes[0]);
                 data.WriteByteMask(bytes[4]);
                 data.WriteByteMask(bytes[5]);
@@ -12783,7 +12783,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[3]);
                 break;
             case MOVE_FLIGHT:
-                data.Initialize(SMSG_MOVE_SPLINE_SET_FLIGHT_SPEED, 1 + 8 + 4);
+                data.Initialize(MSG_MOVE_SET_FLIGHT_SPEED, 1 + 8 + 4);
                 data.WriteByteMask(bytes[2]);
                 data.WriteByteMask(bytes[3]);
                 data.WriteByteMask(bytes[5]);
@@ -12805,7 +12805,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[4]);
                 break;
             case MOVE_FLIGHT_BACK:
-                data.Initialize(SMSG_MOVE_SPLINE_SET_FLIGHT_BACK_SPEED, 1 + 8 + 4);
+                data.Initialize(MSG_MOVE_SET_FLIGHT_BACK_SPEED, 1 + 8 + 4);
                 data.WriteByteMask(bytes[1]);
                 data.WriteByteMask(bytes[6]);
                 data.WriteByteMask(bytes[0]);
@@ -12826,7 +12826,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[3]);
                 break;
             case MOVE_PITCH_RATE:
-                data.Initialize(SMSG_MOVE_SPLINE_SET_PITCH_RATE, 1 + 8 + 4);
+                data.Initialize(MSG_MOVE_SET_PITCH_RATE, 1 + 8 + 4);
                 data.WriteByteMask(bytes[7]);
                 data.WriteByteMask(bytes[2]);
                 data.WriteByteMask(bytes[3]);
@@ -12880,7 +12880,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
         switch (mtype)
         {
             case MOVE_WALK:
-                data.Initialize(SMSG_MOVE_SET_WALK_SPEED, 1 + 8 + 4 + 4 );
+                data.Initialize(SMSG_FORCE_WALK_SPEED_CHANGE, 1 + 8 + 4 + 4 );
                 data.WriteByteMask(bytes[6]);
                 data.WriteByteMask(bytes[5]);
                 data.WriteByteMask(bytes[7]);
@@ -12902,7 +12902,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[0]);
                 break;
             case MOVE_RUN:
-                data.Initialize(SMSG_MOVE_SET_RUN_SPEED, 1 + 8 + 4 + 4 );
+                data.Initialize(SMSG_FORCE_RUN_SPEED_CHANGE, 1 + 8 + 4 + 4 );
                 data.WriteByteMask(bytes[1]);
                 data.WriteByteMask(bytes[0]);
                 data.WriteByteMask(bytes[7]);
@@ -12926,7 +12926,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data << uint32(0);
                 break;
             case MOVE_RUN_BACK:
-                data.Initialize(SMSG_MOVE_SET_RUN_BACK_SPEED, 1 + 8 + 4 + 4 );
+                data.Initialize(SMSG_FORCE_RUN_BACK_SPEED_CHANGE, 1 + 8 + 4 + 4 );
                 data.WriteByteMask(bytes[3]);
                 data.WriteByteMask(bytes[0]);
                 data.WriteByteMask(bytes[6]);
@@ -12949,7 +12949,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[0]);
                 break;
             case MOVE_SWIM:
-                data.Initialize(SMSG_MOVE_SET_SWIM_SPEED, 1 + 8 + 4 + 4 );
+                data.Initialize(SMSG_FORCE_SWIM_SPEED_CHANGE, 1 + 8 + 4 + 4 );
                 data.WriteByteMask(bytes[7]);
                 data.WriteByteMask(bytes[2]);
                 data.WriteByteMask(bytes[3]);
@@ -12971,7 +12971,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data << uint32(0);
                 break;
             case MOVE_SWIM_BACK:
-                data.Initialize(SMSG_MOVE_SET_SWIM_BACK_SPEED, 1 + 8 + 4 + 4 );
+                data.Initialize(SMSG_FORCE_SWIM_BACK_SPEED_CHANGE, 1 + 8 + 4 + 4 );
                 data.WriteByteMask(bytes[3]);
                 data.WriteByteMask(bytes[1]);
                 data.WriteByteMask(bytes[4]);
@@ -12993,7 +12993,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[5]);
                 break;
             case MOVE_TURN_RATE:
-                data.Initialize(SMSG_MOVE_SET_TURN_RATE, 1 + 8 + 4 + 4 );
+                data.Initialize(SMSG_FORCE_TURN_RATE_CHANGE, 1 + 8 + 4 + 4 );
                 data.WriteByteMask(bytes[0]);
                 data.WriteByteMask(bytes[2]);
                 data.WriteByteMask(bytes[1]);
@@ -13016,7 +13016,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[7]);
                 break;
             case MOVE_FLIGHT:
-                data.Initialize(SMSG_MOVE_SET_FLIGHT_SPEED, 1 + 8 + 4 + 4 );
+                data.Initialize(SMSG_FORCE_FLIGHT_SPEED_CHANGE, 1 + 8 + 4 + 4 );
                 data.WriteByteMask(bytes[0]);
                 data.WriteByteMask(bytes[7]);
                 data.WriteByteMask(bytes[4]);
@@ -13039,7 +13039,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[4]);
                 break;
             case MOVE_FLIGHT_BACK:
-                data.Initialize(SMSG_MOVE_SET_FLIGHT_BACK_SPEED, 1 + 8 + 4 + 4 );
+                data.Initialize(SMSG_FORCE_FLIGHT_BACK_SPEED_CHANGE, 1 + 8 + 4 + 4 );
                 data.WriteByteMask(bytes[3]);
                 data.WriteByteMask(bytes[4]);
                 data.WriteByteMask(bytes[5]);
@@ -13061,7 +13061,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.WriteByteSeq(bytes[5]);
                 break;
             case MOVE_PITCH_RATE:
-                data.Initialize(SMSG_MOVE_SET_PITCH_RATE, 1 + 8 + 4 + 4 );
+                data.Initialize(SMSG_FORCE_PITCH_RATE_CHANGE, 1 + 8 + 4 + 4 );
                 data.WriteByteMask(bytes[7]);
                 data.WriteByteMask(bytes[5]);
                 data.WriteByteMask(bytes[6]);
@@ -16222,7 +16222,7 @@ void Unit::SetRooted(bool apply)
         {
             if (Player* player = ToPlayer())
             {
-                WorldPacket data(SMSG_MOVE_ROOT, 10);
+                WorldPacket data(SMSG_FORCE_MOVE_ROOT, 10);
                 data.append(GetPackGUID());
                 data << m_rootTimes;
                 player->GetSession()->SendPacket(&data);
@@ -16230,7 +16230,7 @@ void Unit::SetRooted(bool apply)
         }
         else
         {
-            WorldPacket data(SMSG_MOVE_SPLINE_ROOT, 8);
+            WorldPacket data(SMSG_SPLINE_MOVE_ROOT, 8);
             data.append(GetPackGUID());
             SendMessageToSet(&data, true);
             ToCreature()->StopMoving();
@@ -16244,7 +16244,7 @@ void Unit::SetRooted(bool apply)
             {
                 if (Player* player = ToPlayer())
                 {
-                    WorldPacket data(SMSG_MOVE_UNROOT, 10);
+                    WorldPacket data(SMSG_FORCE_MOVE_UNROOT, 10);
                     data.append(GetPackGUID());
                     data << ++m_rootTimes;
                     player->GetSession()->SendPacket(&data);
@@ -16252,7 +16252,7 @@ void Unit::SetRooted(bool apply)
             }
             else
             {
-                WorldPacket data(SMSG_MOVE_SPLINE_UNROOT, 8);
+                WorldPacket data(SMSG_SPLINE_MOVE_UNROOT, 8);
                 data.append(GetPackGUID());
                 SendMessageToSet(&data, true);
             }
@@ -17720,7 +17720,7 @@ void Unit::_ExitVehicle(Position const* exitPosition)
         ToPlayer()->SetFallInformation(0, GetPositionZ());
     else if (HasUnitMovementFlag(MOVEMENTFLAG_ROOT))
     {
-        WorldPacket data(SMSG_MOVE_SPLINE_UNROOT, 8);
+        WorldPacket data(SMSG_SPLINE_MOVE_UNROOT, 8);
         data.append(GetPackGUID());
         SendMessageToSet(&data, false);
     }

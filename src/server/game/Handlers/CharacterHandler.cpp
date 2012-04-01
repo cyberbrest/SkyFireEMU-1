@@ -878,7 +878,7 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket & recv_data)
 
 void WorldSession::HandleAddonMessagechatOpcode(WorldPacket& recvData)
 {
-    Player* sender = GetPlayer();
+    /*Player* sender = GetPlayer();
     ChatMsg type;
     
     switch (recvData.GetOpcode())
@@ -977,7 +977,7 @@ void WorldSession::HandleAddonMessagechatOpcode(WorldPacket& recvData)
             sLog->outError("HandleAddonMessagechatOpcode: unknown addon message type %u", type);
             break;
         }
-    }
+    }*/
 }
 
 void WorldSession::HandleLoadScreenOpcode(WorldPacket& recv_data)
@@ -1164,7 +1164,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     data << uint64(0);
     SendPacket(&data);
 
-    data.Initialize(SMSG_HOTFIX_INFO);
+    data.Initialize(SMSG_HOTFIX_NOTIFY_BLOP); //or SMSG_HOTFIX_NOTIFY
     HotfixData const& hotfix = sObjectMgr->GetHotfixData();
     data << uint32(hotfix.size());
     for (uint32 i = 0; i < hotfix.size(); ++i)
